@@ -55,7 +55,7 @@ for letter in iconset:
 
 im = Image.open("{}/captcha.gif".format(work_path))
 im2 = Image.new("P",im.size,255)
-im.convert("P")
+im = im.convert("P")
 temp = {}
 
 for x in range(im.size[0]):
