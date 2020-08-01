@@ -2,24 +2,16 @@ from PIL import Image
 import argparse
 import random
 
-def get_char(r,g,b,alpha = 256):
-
-    # 判断 alpha 值
-    if alpha == 0:
-        return ' '
-
+def get_char(pix):
     # 获取字符集的长度
-    length = len(ascii_char)
-
-    # 将 RGB 值转为灰度值 gray，灰度值范围为 0-255
-    gray = int(0.2126 * r + 0.7152 * g + 0.0722 * b)
+    max_index = len(ascii_char)-1
 
     # 灰度值范围为 0-255，而字符集没有那么多
     # 需要进行如下处理才能将灰度值映射到指定的字符上
-    unit = (255.0)/length
+    unit = (255.0)/max_index
 
     # 返回灰度值对应的字符
-    return ascii_char[int(gray/unit)]
+    return ascii_char[int(pix/unit)]
 
 parser = argparse.ArgumentParser()
 
@@ -56,6 +48,7 @@ if __name__ == '__main__':
     # 打开并调整图片的宽和高
     im = Image.open(IMG)
     im = im.resize((WIDTH,HEIGHT), Image.NEAREST)
+    im = im.convert("L")
 
     # 初始化输出的字符串
     txt = ""
@@ -65,7 +58,7 @@ if __name__ == '__main__':
         # 遍历该行中的每一列
         for j in range(WIDTH):
             # 将 (j,i) 坐标的 RGB 像素转为字符后添加到 txt 字符串
-            txt += get_char(*im.getpixel((j,i)))
+            txt += get_char(im.getpixel((j,i)))
         # 遍历完一行后需要增加换行符
         txt += '\n'
     # 输出到屏幕
