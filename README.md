@@ -13,6 +13,8 @@ Python
 ![snake](snap/snake.gif "贪吃蛇")
 
 ### 链接
-[代码小片段](common/README.md) 
-[识别登录验证码学习笔记](captcha/README.md) 
-[K-近邻算法实现手写数字识别系统 学习笔记](kclassify/README.md) 
+[代码小片段](common/README.md)
+
+[识别登录验证码学习笔记](captcha/README.md)
+
+[K-近邻算法实现手写数字识别系统 学习笔记](kclassify/README.md)
