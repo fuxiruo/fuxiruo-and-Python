@@ -31,7 +31,7 @@ mySqlite = MySqlite()
 
 def OnDBFileSelect():
     global varDBFile
-    global comboboxTables
+    global varTablesSelect
 
     if "DbDir" in config.keys():
         DbDir = config["DbDir"]
@@ -46,8 +46,7 @@ def OnDBFileSelect():
 
         mySqlite.open(varDBFile.get())
 
-        comboboxTables['value'] = mySqlite.get_tables()
-        # comboboxTables.current(0)
+        varTablesSelect.set(mySqlite.get_tables())
 
 def OnOutputSelect():
     global varOutput
@@ -77,20 +76,23 @@ def OnInputSelect():
         varInput.set(file)
 
 def OnDBExport():
-    global comboboxTables
+    global listTables
 
-    if not comboboxTables.get():
+    if len(listTables.curselection()) == 0:
         tkinter.messagebox.showwarning(title='警告', message='请先选择表!')
         return
     
-    cmd = '.dump {}'.format(comboboxTables.get())
-    debugOnText(cmd)
-    result = excute_sqlite(cmd)
-    debugOnText(result)
+    for index in listTables.curselection():
+        tableGet = listTables.get(index)
 
-    outPutFile = varOutput.get() + os.path.sep + comboboxTables.get() + '.sql'
-    with open(outPutFile, 'w', newline='', encoding='utf-8') as f:
-        f.write(result) 
+        cmd = '.dump {}'.format(tableGet)
+        debugOnText(cmd)
+        result = excute_sqlite(cmd)
+        debugOnText(result)
+
+        outPutFile = varOutput.get() + os.path.sep + tableGet + '.sql'
+        with open(outPutFile, 'w', newline='', encoding='utf-8') as f:
+            f.write(result) 
 
 def OnDBImport():
     global varInput
@@ -105,15 +107,16 @@ def OnDBImport():
     debugOnText(result)
 
 def OnDBDel():
-    global comboboxTables
+    global listTables
 
-    if not comboboxTables.get():
+    if len(listTables.curselection()) == 0:
         tkinter.messagebox.showwarning(title='警告', message='请先选择表!')
         return
 
-    mySqlite.del_table(comboboxTables.get())
-    debugOnText('del ' + comboboxTables.get() + ' ok')
-    comboboxTables['value'] = mySqlite.get_tables()
+    for index in listTables.curselection():
+        tableGet = listTables.get(index)
+        mySqlite.del_table(tableGet)
+        debugOnText('del ' + tableGet + ' ok')
 
 def getCurrentPath():
     current_path = os.path.dirname(__file__)
@@ -180,16 +183,25 @@ buttonInputSelect = tkinter.Button(frameIntput, text="选择输入", command=OnI
 buttonInputSelect.pack(side=tkc.LEFT, ipadx=20)
 
 # frameDBInfo
-frameDBInfo = tkinter.Frame(windows, relief=tkc.RIDGE, borderwidth=2)
-frameDBInfo.pack(fill=tkc.X, expand=True)
-labelTables = tkinter.Label(frameDBInfo, text="表", borderwidth=2)
-labelTables.pack(side=tkc.LEFT, ipadx=5)
-comboboxTables = tkinter.ttk.Combobox(frameDBInfo, state="readonly")
-comboboxTables.pack(side=tkc.LEFT, fill=tkc.X, expand=True)
+# frameDBInfo = tkinter.Frame(windows, relief=tkc.RIDGE, borderwidth=2)
+# frameDBInfo.pack(fill=tkc.X, expand=True)
+# labelTables = tkinter.Label(frameDBInfo, text="表", borderwidth=2)
+# labelTables.pack(side=tkc.LEFT, ipadx=5)
+# comboboxTables = tkinter.ttk.Combobox(frameDBInfo, state="readonly")
+# comboboxTables.pack(side=tkc.LEFT, fill=tkc.X, expand=True)
 
 # frameText
 frameText = tkinter.Frame(windows, relief=tkc.RIDGE, borderwidth=2)
 frameText.pack(fill=tkc.BOTH, expand=1)
+# frameText #listTables 
+varTablesSelect = tkinter.StringVar()
+listTables = tkinter.Listbox(frameText, listvariable=varTablesSelect, selectmode='multiple')
+listTables.pack(side=tkc.LEFT, fill=tkc.Y, expand=False)
+scrollList = tkinter.Scrollbar(frameText)
+scrollList.pack(side=tkc.LEFT, fill=tkc.Y) # side是滚动条放置的位置，上下左右。fill是将滚动条沿着y轴填充
+scrollList.config(command=listTables.yview) # 将文本框关联到滚动条上，滚动条滑动，文本框跟随滑动
+listTables.config(yscrollcommand=scrollList.set) # 将滚动条关联到文本框
+# frameText #textDebug
 textDebug = tkinter.Text(frameText, height=50)
 textDebug.pack(side=tkc.LEFT, fill=tkc.BOTH, expand=1)
 scrollY = tkinter.Scrollbar(frameText)
