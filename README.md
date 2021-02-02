@@ -10,6 +10,7 @@ Python
 | 4 | kclassify | K-近邻算法实现手写数字识别系统 学习笔记 |
 | 5 | mySQL | SQLite小工具 sqlite3模块和os.popen的使用 |
 | 6 | pdfAddBookmark | 利用PyPDF2给pdf文件加书签 |
+| 7 | Python Cookbook/struct | struct模块编码解码二进制 |
 
 ### 效果图
 ![snake](snap/snake.gif "贪吃蛇")
