@@ -25,7 +25,7 @@ class StructField:
         r = struct.unpack_from(self._format, instance._buffer, self._offset) #获取初始化时的数据类型
         originType = type(r[0] if len(r)==1 else r)
         if not isinstance(value, originType):
-            raise TypeError('Excepted' + originType)
+            raise TypeError('Excepted ' + str(originType))
 
         instance._buffer[self._offset:self._offset+struct.calcsize(self._format)] = struct.pack(self._format, value)
 
@@ -201,7 +201,7 @@ class StructTestCase(unittest.TestCase):
         allPoint.max.y = y2
         self.assertEqual(allPoint.getByteDatas(), bytesdata)
 
-        allPoint2 = AllPoint() # 构造出来的allPoint2.tag是只读的
+        allPoint2 = AllPoint() # allPoint2 = AllPoint(bytesdata)构造出来的allPoint2.tag是只读的
         allPoint2.updateByteDatas(bytesdata)
         self.assertEqual(allPoint2.getByteDatas(), bytesdata)
         allPoint2.tag += 2
