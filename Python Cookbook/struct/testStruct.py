@@ -120,7 +120,7 @@ class StructWithMeta(metaclass=NestedStructMeta):
         self._buffer = memoryview(bytedatas)
 
     def updateByteDatas(self, bytedatas):
-        self._buffer = bytearray(bytedatas)
+        self._buffer = memoryview(bytedatas)
 
     def getByteDatas(self):
         return bytes(self._buffer)
@@ -201,8 +201,8 @@ class StructTestCase(unittest.TestCase):
         allPoint.max.y = y2
         self.assertEqual(allPoint.getByteDatas(), bytesdata)
 
-        allPoint2 = AllPoint() # allPoint2 = AllPoint(bytesdata)构造出来的allPoint2.tag是只读的
-        allPoint2.updateByteDatas(bytesdata)
+        allPoint2 = AllPoint(bytearray(bytesdata)) # allPoint2 = AllPoint(bytesdata)构造出来的allPoint2.tag是只读的，因为bytesdata是bytes类型
+        # allPoint2.updateByteDatas(bytesdata)
         self.assertEqual(allPoint2.getByteDatas(), bytesdata)
         allPoint2.tag += 2
         self.assertNotEqual(allPoint2.getByteDatas(), bytesdata)
