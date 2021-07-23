@@ -11,11 +11,17 @@ Python
 | 5 | mySQL | SQLite小工具 sqlite3模块和os.popen的使用 |
 | 6 | pdfAddBookmark | 利用PyPDF2给pdf文件加书签 |
 | 7 | Python Cookbook/struct | struct模块编码解码二进制 |
+| 8 | Tesseract-Ocr | Tesseract-OCR识别截屏文字 |
 
 ### 效果图
 ![snake](snap/snake.gif "贪吃蛇")
+***
 ![mySQL](snap/mySQL.gif "SQLite小工具")
+***
 ![pdfAddBookmark](snap/pdfAddBookmark.gif "SQLite小工具")
+***
+![Tesseract-Ocr](snap/Tesseract-Ocr.gif "Tesseract-Ocr")
+***
 
 ### 链接
 [代码小片段](common/README.md)
