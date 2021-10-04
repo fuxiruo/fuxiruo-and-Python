@@ -12,6 +12,7 @@ Python
 | 6 | pdfAddBookmark | 利用PyPDF2给pdf文件加书签 |
 | 7 | Python Cookbook/struct | struct模块编码解码二进制 |
 | 8 | Tesseract-Ocr | Tesseract-OCR识别截屏文字 |
+| 9 | autoSetupIss | Inno Setup脚本[Files]字段辅助生成器 |
 
 ### 效果图
 ![snake](snap/snake.gif "贪吃蛇")
