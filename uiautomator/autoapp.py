@@ -102,6 +102,7 @@ def try_run(dev, actions, finish_marks):
             if go_browse:
                 go_browse.click()
                 if not run_xpatch.wait_gone(timeout=3):
+                    fail_times = fail_times + 1
                     logger.debug("{}失败".format(action))
                     continue
 
@@ -129,16 +130,22 @@ if __name__ == '__main__':
 
         winsound.Beep(500,200)
 
+        #淘宝
         target_level = []
         target_level.append(Tofindobject('xpatch', \
             '//*[@resource-id="com.taobao.taobao:id/rv_main_container"]/android.widget.FrameLayout[2]/android.widget.FrameLayout[1]/android.widget.FrameLayout[1]/android.widget.FrameLayout[11]'))
+        
+        #支付宝
+        # target_level.append(Tofindobject('xpatch', \
+        #     '//*[@resource-id="com.alipay.mobile.homefeeds:id/home_adbannerview"]/android.widget.RelativeLayout[1]'))
+        
         target_level.append(Tofindobject('xpatch', '赚糖领红包'))
 
         max_count = 3
-        key_texts = ['去浏览', '去完成']
+        key_texts = ['去浏览', '逛一逛', '去签到']
         finish_marks = ['任务已完成', '喵糖已发放', '开心收下']
         while max_count > 0:
-            max_count = max_count+1
+            max_count = max_count-1
             try_run(d, key_texts, finish_marks)
             try_in_target(d, target_level)
 
