@@ -73,7 +73,7 @@ def try_in_target(dev, target_level):
 def check_run_finish(dev, finish_marks, timeout=15):
     total_time = 0
     while total_time < timeout:
-        total_time = total_time + 1
+        start = time.time()
         for mark in finish_marks:
             if dev(textMatches='{}.*'.format(mark)).wait(timeout=0.5):
                 logger.debug("完成")
@@ -81,6 +81,8 @@ def check_run_finish(dev, finish_marks, timeout=15):
             elif dev(descriptionContains=mark).wait(timeout=0.5):
                 logger.debug("完成")
                 return True
+        end = time.time()
+        total_time = end - start
 
     logger.debug("完成 超时")
     return False
@@ -104,9 +106,10 @@ def try_run(dev, actions, finish_marks):
                 dev(scrollable=True).scroll(steps=5)
                 time.sleep(3)
 
-                if check_run_finish(dev, finish_marks):
-                    dev.press("back")
-                    time.sleep(3)
+                check_run_finish(dev, finish_marks)
+
+                dev.press("back")
+                time.sleep(3)
             else:
                 fail_times = fail_times + 1
 
@@ -129,7 +132,7 @@ if __name__ == '__main__':
 
         max_count = 3
         key_texts = ['去浏览']
-        finish_marks = ['任务已完成', '开心收下']
+        finish_marks = ['任务已完成', '喵糖已发放', '开心收下']
         while max_count > 0:
             max_count = max_count+1
             try_run(d, key_texts, finish_marks)
