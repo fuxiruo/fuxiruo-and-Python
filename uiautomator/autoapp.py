@@ -1,8 +1,8 @@
 import logging
 import time
 import winsound
-import uiautomator2 as u2
 from collections import namedtuple
+import uiautomator2 as u2
 
 LOG_FORMAT = '[%(asctime)s][%(levelname)5s][%(module)s:%(funcName)s][%(threadName)10s:%(thread)5d]->%(message)s'
 
@@ -72,8 +72,8 @@ def try_in_target(dev, target_level):
 
 def check_run_finish(dev, finish_marks, timeout=15):
     total_time = 0
+    start = time.time()
     while total_time < timeout:
-        start = time.time()
         for mark in finish_marks:
             if dev(textMatches='{}.*'.format(mark)).wait(timeout=0.5):
                 logger.debug("完成")
@@ -92,12 +92,17 @@ def try_run(dev, actions, finish_marks):
     while fail_times < 3:
         for action in actions:
             logger.debug("开始{}".format(action))
-            go_browse = dev(textMatches='{}.*'.format(action))
 
-            if go_browse.click_exists(timeout=0.5):
-                print("{}".format(action))
-                if not go_browse.wait_gone(timeout=3):
-                    print("{}失败".format(action))
+            run_xpatch = d.xpath("//*[re:match(@text, '{}.*')]".format(action))
+            if run_xpatch.all():
+                go_browse = run_xpatch.all()[-1] #从最后一个开始
+            else:
+                go_browse = None
+
+            if go_browse:
+                go_browse.click()
+                if not run_xpatch.wait_gone(timeout=3):
+                    logger.debug("{}失败".format(action))
                     continue
 
                 time.sleep(3)
@@ -115,9 +120,7 @@ def try_run(dev, actions, finish_marks):
 
                 btn_close = d(textMatches='开心收下.*')
                 btn_close.click_exists(timeout=1)
-                
                 logger.debug("{}没找到".format(action))
-                break
 
 if __name__ == '__main__':
     try:
@@ -127,11 +130,12 @@ if __name__ == '__main__':
         winsound.Beep(500,200)
 
         target_level = []
-        target_level.append(Tofindobject('xpatch', '//*[@resource-id="com.taobao.taobao:id/rv_main_container"]/android.widget.FrameLayout[2]/android.widget.FrameLayout[1]/android.widget.FrameLayout[1]/android.widget.FrameLayout[11]'))
+        target_level.append(Tofindobject('xpatch', \
+            '//*[@resource-id="com.taobao.taobao:id/rv_main_container"]/android.widget.FrameLayout[2]/android.widget.FrameLayout[1]/android.widget.FrameLayout[1]/android.widget.FrameLayout[11]'))
         target_level.append(Tofindobject('xpatch', '赚糖领红包'))
 
         max_count = 3
-        key_texts = ['去浏览']
+        key_texts = ['去浏览', '去完成']
         finish_marks = ['任务已完成', '喵糖已发放', '开心收下']
         while max_count > 0:
             max_count = max_count+1
