@@ -89,7 +89,7 @@ def check_run_finish(dev, finish_marks, timeout=15):
 
 def try_run(dev, actions, finish_marks):
     fail_times = 0
-    while fail_times < 3:
+    while fail_times < len(actions)+1:
         for action in actions:
             logger.debug("开始{}".format(action))
 
@@ -105,7 +105,7 @@ def try_run(dev, actions, finish_marks):
                     fail_times = fail_times + 1
                     logger.debug("{}失败".format(action))
                     continue
-
+                fail_times = fail_times - 1
                 time.sleep(3)
                 dev(scrollable=True).scroll(steps=5)
                 time.sleep(3)
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         #支付宝
         # target_level.append(Tofindobject('xpatch', \
         #     '//*[@resource-id="com.alipay.mobile.homefeeds:id/home_adbannerview"]/android.widget.RelativeLayout[1]'))
-        
+
         target_level.append(Tofindobject('xpatch', '赚糖领红包'))
 
         max_count = 3
