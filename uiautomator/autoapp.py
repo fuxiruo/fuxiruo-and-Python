@@ -50,11 +50,12 @@ def try_in_target(dev, target_level):
         try_times = try_times + 1
         logger.debug('try {} times'.format(try_times))
         for level, target in enumerate(target_level):
+            logger.debug("try in level {} for {}".format(level, target))
             if target.type == 'xpatch':
                 btn = dev.xpath(target.value)
             else:
                 btn = dev(textMatchs=target.value)
-            if btn.click_exists(timeout=3):
+            if btn.click_exists(timeout=5):
                 logger.debug("try in level {}".format(level))
                 if not btn.wait_gone(timeout=3):
                     logger.debug("try in level {} fail".format(level))
@@ -69,6 +70,8 @@ def try_in_target(dev, target_level):
             logger.debug('back')
             dev.press("back")
             time.sleep(3)
+
+    return bfinal_level_found
 
 def check_run_finish(dev, finish_marks, timeout=15):
     total_time = 0
@@ -105,7 +108,7 @@ def try_run(dev, actions, finish_marks):
                     fail_times = fail_times + 1
                     logger.debug("{}失败".format(action))
                     continue
-                fail_times = fail_times - 1
+                fail_times = 0
                 time.sleep(3)
                 dev(scrollable=True).scroll(steps=5)
                 time.sleep(3)
@@ -126,7 +129,7 @@ def try_run(dev, actions, finish_marks):
 if __name__ == '__main__':
     try:
         u2.HTTP_TIMEOUT = 5
-        d = u2.connect('192.168.1.103:5555')
+        d = u2.connect('192.168.1.105:5555')
 
         winsound.Beep(500,200)
 
@@ -147,7 +150,8 @@ if __name__ == '__main__':
         while max_count > 0:
             max_count = max_count-1
             try_run(d, key_texts, finish_marks)
-            try_in_target(d, target_level)
+            if try_in_target(d, target_level):
+                max_count = max_count+1    
 
         winsound.Beep(500,1000)
     except Exception as err:
