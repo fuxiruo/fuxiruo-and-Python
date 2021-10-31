@@ -56,7 +56,7 @@ def try_in_target(dev, target_level):
             else:
                 btn = dev(textMatchs=target.value)
             if btn.click_exists(timeout=5):
-                logger.debug("try in level {}".format(level))
+                logger.debug("try btn in level {}".format(level))
                 if not btn.wait_gone(timeout=3):
                     logger.debug("try in level {} fail".format(level))
                 else:
@@ -98,7 +98,7 @@ def try_run(dev, actions, finish_marks):
 
             run_xpatch = d.xpath("//*[re:match(@text, '{}.*')]".format(action))
             if run_xpatch.all():
-                go_browse = run_xpatch.all()[-1] #从最后一个开始
+                go_browse = run_xpatch.all()[0] #从第一个开始
             else:
                 go_browse = None
 
@@ -145,7 +145,7 @@ if __name__ == '__main__':
         target_level.append(Tofindobject('xpatch', '赚糖领红包'))
 
         max_count = 3
-        key_texts = ['去浏览', '逛一逛', '去签到']
+        key_texts = ['去浏览', '逛一逛', '去签到', '去完成']
         finish_marks = ['任务已完成', '喵糖已发放', '开心收下']
         while max_count > 0:
             max_count = max_count-1
