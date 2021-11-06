@@ -6,6 +6,7 @@ import tkinter.constants as tkc
 import logging
 import os
 import json
+import configparser
 from datetime import datetime
 from mysqlite import MySqlite 
 
@@ -56,8 +57,10 @@ def OnOutputSelect():
     else:
         OutputDir = getCurrentPath()
 
-    file = tkinter.filedialog.askdirectory(title="选择数据库文件", initialdir=OutputDir)#返回文件夹
+    file = tkinter.filedialog.askdirectory(title="选择输出文件夹", initialdir=OutputDir)#返回文件夹
     if len(file)>0:
+        config["OutputDir"] = file
+
         varOutput.set(file)
 
 def OnInputSelect():
@@ -74,6 +77,21 @@ def OnInputSelect():
         config["InputDir"] = os.path.dirname(file)
 
         varInput.set(file)
+
+def OnParamSelect():
+    global varParamInput
+
+    if "ParamDir" in config.keys():
+        InputDir = config["ParamDir"]
+    else:
+        InputDir = getCurrentPath()
+
+    file = tkinter.filedialog.askopenfilename(title="选择数据库文件", filetypes=[("INI files", "*.ini")], initialdir=InputDir)
+
+    if len(file)>0:
+        config["ParamDir"] = os.path.dirname(file)
+
+        varParamInput.set(file)
 
 def OnDBExport():
     global listTables
@@ -94,6 +112,38 @@ def OnDBExport():
         with open(outPutFile, 'w', newline='', encoding='utf-8') as f:
             f.write(result) 
 
+def OnDBExportData():
+    global comboboxTables
+
+    if not mySqlite.is_open():
+        tkinter.messagebox.showwarning(title='警告', message='请先打开数据库!')
+        return
+
+    if len(listTables.curselection()) == 0:
+        tkinter.messagebox.showwarning(title='警告', message='请先选择表!')
+        return
+    
+    for index in listTables.curselection():
+        tableGet = listTables.get(index)
+    
+        cmd = 'select * from {}'.format(tableGet)
+        debugOnText(cmd)
+        rows = mySqlite._execute(cmd)
+
+        sOuput = "INSERT INTO `{}` {} VALUES {};"
+
+        outPutFile = varOutput.get() + os.path.sep + tableGet + '.sql'
+        with open(outPutFile, 'w', newline='', encoding='utf-8') as f:
+            f.write('BEGIN TRANSACTION;\n')
+            for r in rows:
+                # 第一列认为是自增ID，忽略
+                sRow = sOuput.format(tableGet, str(tuple(r.keys()[1:])), str(tuple(r)[1:]))
+                sRow = sRow.replace('None', 'NULL')
+                debugOnText(sRow)
+                f.write(sRow) 
+                f.write("\n")
+            f.write('COMMIT;')
+
 def OnDBImport():
     global varInput
 
@@ -105,6 +155,47 @@ def OnDBImport():
     debugOnText(cmd)
     result = excute_sqlite(cmd)
     debugOnText(result)
+
+def OnParamImport():
+    global varParamInput
+
+    if not mySqlite.is_open():
+        tkinter.messagebox.showwarning(title='警告', message='请先打开数据库!')
+        return
+
+    if not varParamInput.get():
+        tkinter.messagebox.showwarning(title='警告', message='请先选择文件!')
+        return
+
+    try:
+        config = configparser.ConfigParser()
+        config.read(varParamInput.get(), encoding='utf-8')
+
+        paramDirName = os.path.splitext(os.path.basename(varParamInput.get()))[0]
+        debugOnText('begin import param ' + paramDirName)
+        mySqlite._execute('BEGIN TRANSACTION')
+        mySqlite._execute("delete from 'ParameterDirectory' where Name='{}'".format(paramDirName))
+        mySqlite._execute("delete from 'ParameterDetail' where Name='{}'".format(paramDirName))
+        mySqlite._execute("INSERT INTO `ParameterDirectory` (Name,Context,LastUpdate,Operator,IsUse) VALUES ('{NAME}','{NAME}','{DATE_TIME}','Administrator',1);".format(NAME=paramDirName, DATE_TIME=datetime.now().strftime(r'%Y/%m/%d %H:%M:%S')))
+        for section in config.sections():
+            ramType = config[section]['RamType']
+            # print(type(ramType))
+            ramAddr = config[section]['RamAddr']
+            valueByte = 0
+            valueInt = 0
+            if "1"==ramType:
+                valueByte = config[section]['Value']
+            elif "2"==ramType:
+                valueInt = config[section]['Value']
+            userLabel = config[section]['Name']
+            mySqlite._execute("INSERT INTO `ParameterDetail` (Name,WorkUI,ObjectName,UserLabel,RamType,RamAddr,Value_Byt,Value_INT,Value_TXT,Value_Flo,LastUpdate,Operator,Res1,IsUse) VALUES ('{NAME}','','','{USER_LABEL}',{RAM_TYPE},{RAM_ADDR},{VALUE_BYTE},{VALUE_INT},'',0.0,'{DATE_TIME}','Administrator',NULL,1);".format(NAME=paramDirName, USER_LABEL=userLabel, RAM_TYPE=ramType, RAM_ADDR=ramAddr, VALUE_BYTE=valueByte, VALUE_INT=valueInt, DATE_TIME=datetime.now().strftime(r'%Y/%m/%d %H:%M:%S')))
+
+        mySqlite._execute('COMMIT')
+        debugOnText('end')
+    except Exception as Err:
+        debugOnText(str(Err))
+        tkinter.messagebox.showerror(title='导入失败', message=str(Err))
+        raise
 
 def OnDBDel():
     global listTables
@@ -143,7 +234,8 @@ def debugOnText(strLog):
     log += strLog + "\n"
     textDebug.insert('end', log)
 
-#GUI       
+#GUI      
+logger.debug('hello world') 
 windows = tkinter.Tk()
 windows.geometry('800x600')
 windows.title('sqlite小工具')
@@ -156,6 +248,8 @@ entryDBFile = tkinter.Entry(frameDbFile, bg='white', textvariable=varDBFile)
 entryDBFile.pack(side=tkc.LEFT, fill=tkc.X, expand=1)
 buttonDBFile = tkinter.Button(frameDbFile, text="选择.db数据库", command=OnDBFileSelect)
 buttonDBFile.pack(side=tkc.LEFT, ipadx=20)
+buttonDBExportData = tkinter.Button(frameDbFile, text="导出表数据", command=OnDBExportData)
+buttonDBExportData.pack(side=tkc.RIGHT, ipadx=20)
 buttonDBExport = tkinter.Button(frameDbFile, text="导出表", command=OnDBExport)
 buttonDBExport.pack(side=tkc.RIGHT, ipadx=20)
 buttonDBImport = tkinter.Button(frameDbFile, text="导入表", command=OnDBImport)
@@ -167,7 +261,6 @@ buttonDBDel.pack(side=tkc.RIGHT, ipadx=20)
 frameOutput = tkinter.Frame(windows, relief=tkc.RIDGE, borderwidth=2)
 frameOutput.pack(fill=tkc.X, expand=1)
 varOutput = tkinter.StringVar()
-varOutput.set(getCurrentPath())
 entryOutput = tkinter.Entry(frameOutput, bg='white', textvariable=varOutput)
 entryOutput.pack(side=tkc.LEFT, fill=tkc.X, expand=1)
 buttonOutputSelect = tkinter.Button(frameOutput, text="选择输出", command=OnOutputSelect)
@@ -181,6 +274,17 @@ entryInput = tkinter.Entry(frameIntput, bg='white', textvariable=varInput)
 entryInput.pack(side=tkc.LEFT, fill=tkc.X, expand=1)
 buttonInputSelect = tkinter.Button(frameIntput, text="选择输入", command=OnInputSelect)
 buttonInputSelect.pack(side=tkc.LEFT, ipadx=20)
+
+#frameParam
+frameParam = tkinter.Frame(windows, relief=tkc.RIDGE, borderwidth=2)
+frameParam.pack(fill=tkc.X, expand=1)
+varParamInput = tkinter.StringVar()
+entryParamInput = tkinter.Entry(frameParam, bg='white', textvariable=varParamInput)
+entryParamInput.pack(side=tkc.LEFT, fill=tkc.X, expand=1)
+buttonParamSelect = tkinter.Button(frameParam, text="选择参数文件", command=OnParamSelect)
+buttonParamSelect.pack(side=tkc.LEFT, ipadx=20)
+buttonParamImport = tkinter.Button(frameParam, text="导入", command=OnParamImport)
+buttonParamImport.pack(side=tkc.LEFT, ipadx=20)
 
 # frameDBInfo
 # frameDBInfo = tkinter.Frame(windows, relief=tkc.RIDGE, borderwidth=2)
@@ -215,6 +319,11 @@ try:
     config = {}
     with open(cfgFile) as fileObj:
         config = json.load(fileObj)
+
+        if 'OutputDir' in config:
+            varOutput.set(config['OutputDir'])
+        else:
+            varOutput.set(getCurrentPath())
 except Exception as Err:
     errStr = str(Err)
     # debugOnText(errStr)

@@ -5,7 +5,7 @@ import os
 LOG_FORMAT = '[%(asctime)s][%(levelname)5s][%(module)s:%(funcName)s][%(threadName)10s:%(thread)5d]->%(message)s'
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # create console handler and set level to debug
 ch = logging.StreamHandler()
@@ -29,7 +29,9 @@ class MySqlite():
 
         try:
             self._conn = sqlite3.connect(self._db_file)
+            self._conn.row_factory = sqlite3.Row
             self._c = self._conn.cursor()
+
         except sqlite3.Error as e:
             logger.error(str(e))
             raise e
@@ -44,12 +46,16 @@ class MySqlite():
 
             self._db_file = db_file
             self._conn = sqlite3.connect(self._db_file)
+            self._conn.row_factory = sqlite3.Row
             self._c = self._conn.cursor()
 
             logger.info(self._db_file + ' open')
         except sqlite3.Error as e:
             logger.error(str(e))
             raise e
+
+    def is_open(self):
+        return self._conn
 
     def __del__(self):
         try: 
@@ -62,7 +68,7 @@ class MySqlite():
 
     def _execute(self, sql):
         logger.debug(sql)
-        self._c.execute(sql)
+        return self._c.execute(sql)
 
     def get_tables(self):
         try:
@@ -83,6 +89,7 @@ class MySqlite():
         try:
             self._execute('delete from ' + table)
             self._execute('commit')
+            self._execute('vacuum') #释放删除数据占的空间
         except sqlite3.Error as e:
             logger.error(str(e))
             raise e
