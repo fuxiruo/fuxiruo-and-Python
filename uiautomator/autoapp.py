@@ -92,6 +92,7 @@ def check_run_finish(dev, finish_marks, timeout=15):
 
 def try_run(dev, actions, finish_marks):
     fail_times = 0
+    bfind_once = False
     while fail_times < len(actions)+1:
         for action in actions:
             logger.debug("开始{}".format(action))
@@ -109,6 +110,7 @@ def try_run(dev, actions, finish_marks):
                     logger.debug("{}失败".format(action))
                     continue
                 fail_times = 0
+                bfind_once = True
                 time.sleep(3)
                 dev(scrollable=True).scroll(steps=5)
                 time.sleep(3)
@@ -126,10 +128,12 @@ def try_run(dev, actions, finish_marks):
                 btn_close.click_exists(timeout=1)
                 logger.debug("{}没找到".format(action))
 
+    return bfind_once
+
 if __name__ == '__main__':
     try:
         u2.HTTP_TIMEOUT = 5
-        d = u2.connect('192.168.1.105:5555')
+        d = u2.connect('192.168.1.102:5555')
 
         winsound.Beep(500,200)
 
@@ -145,13 +149,14 @@ if __name__ == '__main__':
         target_level.append(Tofindobject('xpatch', '赚糖领红包'))
 
         max_count = 3
-        key_texts = ['去浏览', '逛一逛', '去签到', '去完成']
+        key_texts = ['去浏览', '逛一逛', '签到']
+        # key_texts = ['去浏览', '逛一逛', '去签到', '去完成', ' 去逛逛']
         finish_marks = ['任务已完成', '喵糖已发放', '开心收下']
         while max_count > 0:
             max_count = max_count-1
-            try_run(d, key_texts, finish_marks)
-            if try_in_target(d, target_level):
+            if try_run(d, key_texts, finish_marks):
                 max_count = max_count+1    
+            try_in_target(d, target_level)
 
         winsound.Beep(500,1000)
     except Exception as err:
