@@ -14,6 +14,7 @@ Python
 | 8 | Tesseract-Ocr | Tesseract-OCR识别截屏文字 |
 | 9 | autoSetupIss | Inno Setup脚本[Files]字段辅助生成器 |
 | 10 | xmlhelper | tkinter+xml+re+excel综合例子 |
+| 11 | tinyxmlparse | 简易xml解析器 |
 
 ### 效果图
 ![snake](snap/snake.gif "贪吃蛇")
