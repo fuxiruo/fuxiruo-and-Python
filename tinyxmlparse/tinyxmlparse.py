@@ -114,8 +114,8 @@ class TinyXmlParse:
                 self._tags.append(self._now_tag)
                 self._now_level = self._now_level + 1
 
-        self._token = self._next()
         self._read_str = ''
+        self._token = self._next()
         self._data_str = ''
         self._b_tag_open_start = False
         self._b_tag_close_start = False
@@ -157,8 +157,6 @@ class TinyXmlParse:
             raise TinyXmlException('{} expect data but {} found!'.format(self._read_str, ch))
 
         self._data_str = self._data_str + ch
-        self._token = self._next()
-        self._parse_data(self._token)
 
     def _parse_V(self, ch):
         self._continue = 'v'
@@ -182,5 +180,3 @@ class TinyXmlParse:
                 self._b_tag_attrib_start = True
             else:
                 self._now_tag = self._now_tag + ch
-        self._token = self._next()
-        self._parse_V(self._token)
