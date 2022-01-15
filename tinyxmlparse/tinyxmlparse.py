@@ -96,7 +96,10 @@ class TinyXmlParse:
         b_tag_close = False
         if len(self._tags) > 0:
             last_tag = '/' + self._tags[-1]
-        if last_tag == self._now_tag:
+        if self._read_str.endswith('/>'):
+            myui_logger.info('tag self close:{},level:{},_now_attrib_str:{}'.format(self._now_tag, self._now_level, self._now_attrib_str))
+            myui_logger.info('-'*50)
+        elif last_tag == self._now_tag:
             self._now_level = self._now_level - 1
             myui_logger.info('tag close:{},level:{},data:{}'.format(last_tag, self._now_level, self._data_str))
             myui_logger.info('-'*50)
@@ -134,7 +137,12 @@ class TinyXmlParse:
                 self._parse_V(self._token)
         else:
             self._token = self._next() #<test/> S->Vef
-            self._parse_e(self._token)
+            if self._token =='>':#V可能含有/
+                self._parse_e(self._token)
+            else:
+                if self._b_tag_attrib_start:
+                    self._now_attrib_str = self._now_attrib_str + ch
+                self._parse_V(self._token)
 
     def _parse_data(self, ch):
         # myui_logger.debug('now:{}'.format(self._read_str))
@@ -144,7 +152,7 @@ class TinyXmlParse:
             return
         elif ch in self._start_symbol:
             return self._parse_S(ch)
-        elif ch in self._end_symbol:
+        elif ch in self._end_symbol and ch == '<': #data可能含有/
             myui_logger.error('{} expect data but {} found!'.format(self._read_str, ch))
             raise TinyXmlException('{} expect data but {} found!'.format(self._read_str, ch))
 
@@ -166,6 +174,7 @@ class TinyXmlParse:
                 return self._parse_f(ch)
             else:
                 return self._parse_e(ch)
+
         if self._b_tag_open_start or self._b_tag_close_start:
             if self._b_tag_attrib_start:
                 self._now_attrib_str = self._now_attrib_str + ch

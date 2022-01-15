@@ -31,6 +31,8 @@ testStr = """
 		<dd>North Bound</dd>
 	</sri>
 	<cr ui="4" ty="5">22</cr>
+    <selfclosetag1 tt="666"/>
+    <selfclosetag2 tt=":/abc"/>
 	<pre>
 		<pt>5 MIN</pt>
 		<fd>Howard</fd>
