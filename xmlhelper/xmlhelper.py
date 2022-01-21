@@ -3,6 +3,7 @@ import os
 import logging
 import re
 import shutil
+import sys
 
 import tkinter.filedialog
 import tkinter.messagebox
@@ -30,7 +31,10 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 def getCurrentPath():
-    current_path = os.path.dirname(__file__)
+    if getattr(sys, 'frozen', False):
+        current_path = os.path.dirname(sys.executable)
+    elif __file__:
+        current_path = os.path.dirname(__file__)
     return current_path
 
 def debugOnText(strLog):
@@ -1870,6 +1874,7 @@ t.config(yscrollcommand=scrollY.set) # 将滚动条关联到文本框
 #加载配置
 try:
     cfgFile = getCurrentPath() + os.path.sep + "config.cfg"
+    debugOnText('cfgFile:{}'.format(cfgFile))
     config = {}
     with open(cfgFile) as fileObj:
         config = json.load(fileObj)
