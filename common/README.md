@@ -4,6 +4,7 @@
 | 编号 | 描述 |
 | ------| ------ |
 | 1 |非递归方式获取所有指定类型文件 |
+| 2 |获取打包成执行文件(exe)和脚本运行文件的路径 |
 
 ***
 
@@ -32,5 +33,17 @@ def get_ui_files(path):
     return files
 ```
 
+2. python中获取打包成执行文件(exe)和脚本运行文件的路径
+在写python程序中，有可能需要获取当前运行脚本的路径。打包成exe的脚本和直接运行地脚本在获取路径上稍微有点不同。
+```
+import os
+import sys
+
+# determine if application is a script file or frozen exe
+if getattr(sys, 'frozen', False):
+    application_path = os.path.dirname(sys.executable)
+elif __file__:
+    application_path = os.path.dirname(__file__)
+```
 ***
 
