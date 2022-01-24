@@ -30,9 +30,9 @@ testStr = """
 		<d>North Bound</d>
 		<dd>North Bound</dd>
 	</sri>
-	<cr ui="4" ty="5">22</cr>
-    <selfclosetag1 tt="666"/>
-    <selfclosetag2 tt=":/abc"/>
+	<cr ui="4" ty="5">22/er</cr>
+    <self1 tt="666"/>
+    <self2 tt=":/path"/>
 	<pre>
 		<pt>5 MIN</pt>
 		<fd>Howard</fd>
@@ -67,7 +67,15 @@ fail_test_str_with_no_right = """
 class XmlTestCase(unittest.TestCase):
     def try_parse(self, dataStr):
         tiny_xml = TinyXmlParse()
-        for line in dataStr.splitlines():
+        for line in dataStr.splitlines():# 一行行解析
+            tiny_xml.feed_line(line)
+            tiny_xml.parse()
+        tiny_xml.check_single_tags()
+        return True
+
+    def try_parse_by_byte(self, dataStr):# 一个个字解析
+        tiny_xml = TinyXmlParse()
+        for line in dataStr:
             tiny_xml.feed_line(line)
             tiny_xml.parse()
         tiny_xml.check_single_tags()
@@ -78,6 +86,10 @@ class XmlTestCase(unittest.TestCase):
 
     def test_pass(self):
         self.assertEqual(self.try_parse(testStr
+        ), True)
+
+    def test_pass2(self):
+        self.assertEqual(self.try_parse_by_byte(testStr
         ), True)
 
     def test_fail(self):

@@ -59,8 +59,8 @@ class TinyXmlParse:
     def _next(self):
         self._now_index = self._now_index + 1
         if self._now_index < len(self._now_line):
-            if self._now_index > 0:
-                self._last_ch = self._now_line[self._now_index-1]
+            if len(self._read_str) > 0:
+                self._last_ch = self._read_str[-1]
 
             self._read_str += self._now_line[self._now_index]
             return self._now_line[self._now_index]
@@ -133,8 +133,11 @@ class TinyXmlParse:
             if self._token != '/':
                 raise TinyXmlException('{} expect / but {} found!'.format(self._read_str, self._token))
             else:
-                self._token = self._next()
-                self._parse_V(self._token)
+                if not self._b_tag_close_start:
+                    self._b_tag_close_start = True
+                    self._now_tag = self._now_tag + self._token
+                self._token = self._next() 
+                self._parse_V(self._token)   
         else:
             self._token = self._next() #<test/> S->Vef
             if self._token =='>':#V可能含有/
@@ -148,11 +151,11 @@ class TinyXmlParse:
         # myui_logger.debug('now:{}'.format(self._read_str))
         self._continue = 'data'
         if ch is None:
-            myui_logger.warning('{} expect data but end!'.format(self._read_str))
-            return
+            myui_logger.debug('{} expect data but end!'.format(self._read_str))  
+            return    
         elif ch in self._start_symbol:
             return self._parse_S(ch)
-        elif ch in self._end_symbol and ch == '<': #data可能含有/
+        elif ch in self._end_symbol and ch == '>': #data可能含有/
             myui_logger.error('{} expect data but {} found!'.format(self._read_str, ch))
             raise TinyXmlException('{} expect data but {} found!'.format(self._read_str, ch))
 
@@ -162,8 +165,8 @@ class TinyXmlParse:
         self._continue = 'v'
         # myui_logger.debug('now:{}'.format(self._read_str))
         if ch is None:
-            myui_logger.warning('{} expect V but end!'.format(self._read_str))
-            return
+            myui_logger.debug('{} expect V but end!'.format(self._read_str))     
+            return 
         elif ch in self._start_symbol:
             myui_logger.error('{} expect V|> but {} found!'.format(self._read_str, ch))
             raise TinyXmlException('{} expect V|> but {} found!'.format(self._read_str, ch))
