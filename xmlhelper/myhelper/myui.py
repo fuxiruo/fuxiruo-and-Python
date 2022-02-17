@@ -15,15 +15,16 @@ class MyUI:
         self._file = uiFile
         xmlFileText = open(uiFile, encoding='utf-8').read()
         self.root = ET.fromstring(xmlFileText)
-
+    
     def get_addrlist(self):
-        addrList={}
+        addrList=[]
         for widget in self.root.iter('widget'):
             # print(widget.attrib['class'])
             if widget.attrib['class'] == 'qhStepInput' \
                 or widget.attrib['class'] == 'qhINTInput'  \
                 or widget.attrib['class'] == 'qhSimpleSelect':
                 propertMap = {}
+                propertMap['file'] = os.path.basename(self._file)
                 for propertys in widget.iter('property'):
                     if propertys.attrib['name'] == 'LabelComponentName':
                         propertMap['LabelComponentName'] = propertys.find('string').text
@@ -45,12 +46,12 @@ class MyUI:
                         propertMap['RamAddr'] = propertys.find('UInt').text
                         # print(propertMap['RamAddr'])
 
-                addrList['{}-{}'.format(os.path.basename(self._file).split('.')[0], widget.attrib['name'])] = propertMap
+                addrList.append(propertMap)
 
         return addrList
 
     def get_addrlist_from_sysform_ui(self):
-        addrList={}
+        addrList=[]
         for widget in self.root.iter('widget'):
             if widget.attrib['class'] == 'ConfigLineEdit' \
                 or widget.attrib['class'] == 'ConfigDeviceOpenOrClose'  \
@@ -69,7 +70,7 @@ class MyUI:
                         propertMap['RamAddr'] = propertys.find('string').text
                         # print(propertMap['RamAddr'])
 
-                addrList[widget.attrib['name']] = propertMap
+                addrList.append(propertMap)
 
         return addrList
 
@@ -87,17 +88,20 @@ class MyUI:
             now_item = now_item_level.item
             now_level = now_item_level.level
 
-            if len(list(now_item)) > 0:
+            if(len(list(now_item)) > 0):
                 bfind_qhsensor = False
                 for item in now_item:
                     if item.tag == 'widget':
+                        temp_map = {}
+                        temp_map['File'] = os.path.basename(self._file)
+
                         if item.attrib['class'] == 'qhSensor':
                             # print('*'*50)
                             bfind_qhsensor = True
                             sensor_level_list.append(SensorLevel(item, now_level))
                             # print('add sensor:', now_level, item.attrib['name'])
 
-                            sensor_id = ''
+                            sensor_id = '0'
                             sensor_name = ''
                             item_id = item.find('.//*[@name="ID"]/UInt')
                             if item_id is not None:
@@ -119,7 +123,6 @@ class MyUI:
                                 latest_layout = None
                                 latest_layout_level = 0
 
-                            temp_map = {}
                             temp_map['ID'] = int(sensor_id)
                             temp_map['Name'] = sensor_name
                             portList.append(temp_map)
@@ -130,15 +133,15 @@ class MyUI:
                             item_id = item.find('.//*[@name="ID"]/UInt')
                             if item_id is not None:
                                 # print('sensor id:', item_id.attrib,  item_id.text)
-                                temp_id = item_id.text
+                                temp_id = item_id.text   
                             item_id = item.find('.//*[@name="ButtonAText"]/string')
                             if item_id is not None:
                                 # print('sensor id:', item_id.attrib,  item_id.text)
-                                temp_name = item_id.text
+                                temp_name = item_id.text   
                                 target_name_include = re.split(r'([a-zA-Z0-9-]+)', temp_name)
                                 if len(target_name_include) > 1:
                                     temp_name = target_name_include[1]
-                            temp_map = {}
+
                             temp_map['ID'] = int(temp_id)
                             temp_map['Name'] = temp_name.split(' ')[0]
                             portList.append(temp_map)
@@ -155,7 +158,7 @@ class MyUI:
         return portList
 
     @staticmethod
-    def get_ui_files(path):
+    def get_files(path, suffixs:tuple):
         files = []
 
         with os.scandir(path) as it:
@@ -167,7 +170,7 @@ class MyUI:
                         if entry.is_symlink():
                             myui_logger.info('skip symlink:' + entry.path)
                             continue
-                        elif entry.is_file()  and entry.name.endswith('.ui'):
+                        elif entry.is_file() and entry.name.endswith(suffixs):
                             files.append(entry.path)
                         elif entry.is_dir():
                             with os.scandir(entry.path) as sub_dir_it:
@@ -177,3 +180,9 @@ class MyUI:
                         continue
 
         return files
+
+    @staticmethod
+    def get_ui_files(path):
+        return MyUI.get_files(path, ('.ui'))
+
+   

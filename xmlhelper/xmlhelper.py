@@ -33,7 +33,7 @@ logger.addHandler(ch)
 def getCurrentPath():
     if getattr(sys, 'frozen', False):
         current_path = os.path.dirname(sys.executable)
-    elif __file__:
+    else:
         current_path = os.path.dirname(__file__)
     return current_path
 
@@ -969,7 +969,7 @@ def on_clear_unused_action():
     global varXmlLabel
     global t
 
-    if not varXmlLabel.get():
+    if not varXmlLabel.get() or not varOutputLabel.get():
         tkinter.messagebox.showwarning(title='警告', message='请先选择好脚本文件!')
     else:
         t.delete(0.0, TC.END)
@@ -1025,7 +1025,7 @@ def on_mark_unused_action():
     global varXmlLabel
     global t
 
-    if not varXmlLabel.get():
+    if not varXmlLabel.get() or not varOutputLabel.get():
         tkinter.messagebox.showwarning(title='警告', message='请先选择好脚本文件!')
     else:
         t.delete(0.0, TC.END)
@@ -1474,7 +1474,7 @@ def on_UI_select():
         config["UI_Dir"] = file
 
 def deal_ui():
-    allAddrList = {}
+    allAddrList = []
     for file in myui.MyUI.get_ui_files(varUILabel.get()):
         try:
             uiC = myui.MyUI(file)
@@ -1484,10 +1484,10 @@ def deal_ui():
                 # debugOnText('待处理列表为空')
                 continue
 
-            allAddrList.update(addrList)
+            allAddrList.extend(addrList)
 
             debugOnText(file)
-            sortAddrList = sorted(addrList.values(), key=lambda addr: int(addr['RamAddr'])) #按地址排序
+            sortAddrList = sorted(addrList, key=lambda addr: int(addr['RamAddr'])) #按地址排序
             for v in sortAddrList:
                 debugOnText(str(v))
                 debugOnText('-'*100)
@@ -1499,8 +1499,8 @@ def deal_ui():
             tkinter.messagebox.showerror(title='失败', message=str(Err))
             continue
 
-    debugOnText('*'*100)
-    sortAddrList = sorted(allAddrList.values(), key=lambda addr: int(addr['RamAddr'])) #按地址排序
+    debugOnText('*'*150)
+    sortAddrList = sorted(allAddrList, key=lambda addr: int(addr['RamAddr'])) #按地址排序
     addrUsed = set()
     LabelComponentNameUsed = set()
     for v in sortAddrList:
@@ -1539,6 +1539,7 @@ def deal_port():
             debugOnText('')
 
         except Exception as Err:
+            logger.exception('处理端口失败')
             tkinter.messagebox.showerror(title='失败', message=str(Err))
             continue
 
@@ -1562,7 +1563,7 @@ def deal_port():
             elif v['ID'] in xml_id_as_key_port_list:
                 s_cmp_resutl = '<->' + str(xml_id_as_key_port_list[v['ID']])
             else:
-                s_cmp_resutl = '<->'
+                s_cmp_resutl = '<->未找到匹配的端口!!!'
         debugOnText(str(v) + s_cmp_resutl)
         debugOnText('-'*100)
 
@@ -1590,6 +1591,39 @@ def on_deal_UI_port():
 
         deal_port()
 
+def on_replace_qhmotor_objname():
+    t.delete(0.0, TC.END)
+    old_qhmotor_objnames = re.split(',|，', varOldqhMotro.get())
+    new_qhmotor_objnames = re.split(',|，', varNewqhMotro.get())
+
+    if len(old_qhmotor_objnames) != len(new_qhmotor_objnames):
+        tkinter.messagebox.showwarning(title='警告', message='新旧qhmotor_objname数量不一致!')
+        return
+
+    if not varOutputLabel.get():
+        tkinter.messagebox.showwarning(title='警告', message='请先选择临时文件输出文件夹!')
+        return
+
+    for file in myui.MyUI.get_files(varUILabel.get(), ('.ui','.cpp')):
+        tempFile = os.path.dirname(varOutputLabel.get()) + '/' + os.path.basename(file) + '.tmp'
+        debugOnText(file)
+        debugOnText(tempFile)
+        with open(tempFile, 'w', encoding='utf-8') as newFileObj:
+            with open(file, encoding='utf-8') as fileObj:
+                for line in fileObj:
+                    newLine = line
+                    for old,new in zip(old_qhmotor_objnames, new_qhmotor_objnames):
+                        oldPat = r'([^a-zA-Z0-9_]|^){}([^a-zA-Z0-9_]|$)'.format(old)
+                        newPat = r'\1{}\1'.format(new)
+                        newLine = re.sub(oldPat, newPat, newLine)
+                    if newLine != line:
+                        debugOnText(line + '=>')
+                        debugOnText(newLine)
+                        debugOnText('-'*100)
+                        debugOnText('')
+                    newFileObj.write(newLine)
+        debugOnText("\r\n"*3)
+
 def on_sysform_select():
     global varSysform
     global config
@@ -1613,7 +1647,7 @@ def deal_sysform_ui():
             tkinter.messagebox.showwarning(title='待处理列表为空', message='请检查文件或者工作表格式是否正确!')
             return
 
-        sortAddrList = sorted(addrList.values(), key=lambda addr: int(addr['RamAddr'])) #按地址排序
+        sortAddrList = sorted(addrList, key=lambda addr: int(addr['RamAddr'])) #按地址排序
         for v in sortAddrList:
             debugOnText(str(v))
 
@@ -1838,6 +1872,22 @@ copyToOtherXmlButton.pack(side=TC.RIGHT, ipadx=45)
 movePointXYButton = tkinter.Button(frameAutoAddBtn, text="模组内动作坐标移动", command=on_move_point_xy)
 movePointXYButton.pack(side=TC.RIGHT, ipadx=45)
 
+##frameqhMotor
+frameqhMotor = tkinter.Frame(frameUIDeal, relief=TC.RIDGE, borderwidth=2)
+frameqhMotor.pack(fill=TC.X, expand=1)
+labelOldqhMotor = tkinter.Label(frameqhMotor, text="旧qhMotor的objectName", borderwidth=2)
+labelOldqhMotor.pack(side=TC.LEFT, ipadx=5)
+varOldqhMotro = tkinter.StringVar()
+varOldqhMotro.set('qhmotor_m')
+entryOldqhMotor = tkinter.Entry(frameqhMotor, bg='white', textvariable=varOldqhMotro)
+entryOldqhMotor.pack(side=TC.LEFT, fill=TC.X, ipadx=45, expand=True)
+labelNewqhMotor = tkinter.Label(frameqhMotor, text="新qhMotor的objectName", borderwidth=2)
+labelNewqhMotor.pack(side=TC.LEFT, ipadx=5)
+varNewqhMotro = tkinter.StringVar()
+varNewqhMotro.set('qhmotor_m')
+entryNewqhMotor = tkinter.Entry(frameqhMotor, bg='white', textvariable=varNewqhMotro)
+entryNewqhMotor.pack(side=TC.LEFT, fill=TC.X, ipadx=45, expand=True)
+
 ##frameUI
 frameUI = tkinter.Frame(frameUIDeal, relief=TC.RIDGE, borderwidth=2)
 frameUI.pack(fill=TC.X, expand=1)
@@ -1850,6 +1900,8 @@ btnDealUI = tkinter.Button(frameUI, text="地址", command=on_deal_UI)
 btnDealUI.pack(side=TC.RIGHT, ipadx=20)
 btnDealPort = tkinter.Button(frameUI, text="端口", command=on_deal_UI_port)
 btnDealPort.pack(side=TC.RIGHT, ipadx=20)
+btnReplaceMotorObjName = tkinter.Button(frameUI, text="替换qhMotor的objectName", command=on_replace_qhmotor_objname)
+btnReplaceMotorObjName.pack(side=TC.RIGHT, ipadx=20)
 
 ##frameSysform
 frameSysform = tkinter.Frame(frameUIDeal, relief=TC.RIDGE, borderwidth=2)
