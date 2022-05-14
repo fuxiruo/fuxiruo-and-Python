@@ -26,11 +26,9 @@ public class MyCameraView  extends SurfaceView implements SurfaceHolder.Callback
     public MyCameraView(Context context, Camera camera) {
         super(context);
         Log.d(TAG, "MyCameraView: ");
-        ust = new UdpSocketThread();
-        ust.start();
-        tst = new TcpSocketThread(6666);
-        tst.start();
         mCamera = camera;
+        ust = new UdpSocketThread();
+        tst = new TcpSocketThread(6666);
 
         // Install a SurfaceHolder.Callback so we get notified when the
         // underlying surface is created and destroyed.
@@ -44,6 +42,9 @@ public class MyCameraView  extends SurfaceView implements SurfaceHolder.Callback
         Log.d(TAG, "surfaceCreated: ");
         // The Surface has been created, now tell the camera where to draw the preview.
         try {
+            ust.start();
+            tst.start();
+
             mCamera.setDisplayOrientation(90);
             mCamera.setPreviewCallback(this);
             mCamera.setPreviewDisplay(holder);
@@ -56,8 +57,9 @@ public class MyCameraView  extends SurfaceView implements SurfaceHolder.Callback
     public void surfaceDestroyed(SurfaceHolder holder) {
         // empty. Take care of releasing the Camera preview in your activity.
         Log.d(TAG, "surfaceDestroyed: ");
-        mCamera.setPreviewCallback(null);
         ust.interrupt();
+        tst.stopListen();
+        tst.interrupt();
     }
 
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
@@ -111,6 +113,10 @@ public class MyCameraView  extends SurfaceView implements SurfaceHolder.Callback
 
     public void onPreviewFrame(byte[] data,Camera camera){
         try{
+            if(data == null){
+                Log.w(TAG, "data null ");
+                return;
+            }
             //convert YuvImage(NV21) to JPEG Image data
             //Log.d(TAG, "onPreviewFrame: ");
 
@@ -121,7 +127,6 @@ public class MyCameraView  extends SurfaceView implements SurfaceHolder.Callback
             yuvimage.compressToJpeg(new Rect(0,0,this.width,this.height),100,baos);
 
             tst.trySend(baos);
-
         }catch(Exception e){
             Log.d(TAG,e.toString());
         }

@@ -54,6 +54,14 @@ class ClientThread implements Runnable {
         return strBuilder.toString();
     }
 
+    public  void stop(){
+        try {
+            mClientSocket.close();
+        } catch (IOException e) {
+            Log.w(TAG, e);
+        }
+    }
+
     @Override
     public void run() {
         try {
@@ -87,9 +95,6 @@ class ClientThread implements Runnable {
                     ByteArrayOutputStream bos = queueToSend.poll();
                     Log.d(TAG, "send:" + bos.toByteArray().length);
                     byte[] bytesToSend = bos.toByteArray();
-                    int j = 1000;
-                    int sendCount = 0;
-                    ByteArrayInputStream bi = new ByteArrayInputStream(bytesToSend);
                     byte[] header = new byte[8];
                     header[0] = (byte)(0xAA);
                     header[1] = (byte)(0x55);
@@ -161,10 +166,21 @@ public class TcpSocketThread  extends Thread{
         }
     }
 
+    public void stopListen(){
+        try {
+            for (ClientThread thread : mClientList) {
+                thread.stop();
+            }
+            mServer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     protected void finalize() throws Throwable {
-        Log.d(TAG, "finalize: ");
-        mServer.close();
+        Log.d(TAG, "finalize");
+        stopListen();
         super.finalize();
     }
 }
