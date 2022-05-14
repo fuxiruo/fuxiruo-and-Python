@@ -18,6 +18,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 class ClientThread implements Runnable {
@@ -34,11 +35,18 @@ class ClientThread implements Runnable {
         queueToSend = new ConcurrentLinkedQueue<ByteArrayOutputStream>();
     }
 
-    public  void trySend(ByteArrayOutputStream bytesToSend){
+    public  boolean trySend(ByteArrayOutputStream bytesToSend){
         try {
-            queueToSend.add(bytesToSend);
+            if(mClientSocket.isClosed()){
+                Log.d(TAG, "trySend: socket close");
+                return false;
+            }else{
+                queueToSend.add(bytesToSend);
+                return true;
+            }
         }catch (Exception e){
             Log.e(TAG, "trySend: ", e);
+            return false;
         }
     }
 
@@ -61,7 +69,14 @@ class ClientThread implements Runnable {
             Log.w(TAG, e);
         }
     }
-
+/*
+* 在Socket对象被关闭后，我们可以通过isClosed方法来判断某个Socket对象是否处于关闭状态。
+* 然而使用isClosed方法所返回的只是Socket对象的当前状态，也就是说，不管Socket对象是否曾经连接成功过，只要处于关闭状态，isClosde就返回true。
+* 如果只是建立一个未连接的Socket对象，isClose也同样返回true。如下面的代码将输出false
+* 除了isClose方法，Socket类还有一个isConnected方法来判断Socket对象是否连接成功。看到这个名字，也许读者会产生误解。其实isConnected方法所判断的并不是Socket对象的当前连接状态，
+* 而是Socket对象是否曾经连接成功过，如果成功连接过，即使现在isClose返回true，isConnected仍然返回true。
+* 因此，要判断当前的Socket对象是否处于连接状态，必须同时使用isClose和isConnected方法，即只有当isClose返回false，isConnected返回true的时候Socket对象才处于连接状态。
+* */
     @Override
     public void run() {
         try {
@@ -75,7 +90,7 @@ class ClientThread implements Runnable {
         }
 
         try{
-            while (mClientSocket.isConnected()){
+            while (mClientSocket.isConnected() && !mClientSocket.isClosed()){
                 InputStream ins = mClientSocket.getInputStream();
                 byte[] bytes = new byte[1024];
                 Arrays.fill(bytes, (byte) 0);
@@ -115,6 +130,11 @@ class ClientThread implements Runnable {
             Log.w(TAG, "Exception: ", e);
         }
 
+        try {
+            mClientSocket.close();
+        } catch (IOException e) {
+            Log.d(TAG, "close fail: ", e);
+        }
         Log.d(TAG, "close: " + mClientSocket.getRemoteSocketAddress().toString() );
     }
 }
@@ -161,8 +181,17 @@ public class TcpSocketThread  extends Thread{
     }
 
     public  void trySend(ByteArrayOutputStream bytesToSend){
-        for (ClientThread thread : mClientList) {
-            thread.trySend(bytesToSend);
+        try {
+            Iterator it = mClientList.iterator();
+            while(it.hasNext()){
+                ClientThread thread = (ClientThread) it.next();
+                if(!thread.trySend(bytesToSend)){
+                    Log.d(TAG, "trySend: fail,remove it");
+                    it.remove();
+                }
+            }
+        }catch (Exception e){
+            Log.d(TAG, "trySend: " + e);
         }
     }
 
