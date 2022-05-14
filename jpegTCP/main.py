@@ -85,6 +85,8 @@ class tkGUI:
                     sock.connect((HOST, PORT))
                     sock.settimeout(0.1)  # 设置超时
                     logger.debug("connect succ")
+                    recvBuff = bytes()
+                    startFindIndex = 0
                     while self.go:
                         try:
                             data = sock.recv(1000)
@@ -108,7 +110,7 @@ class tkGUI:
                                                 # logger.debug("lenght: {}".format(picLen))
 
                                             if len(recvBuff) >= jpegStartIndex4+5+picLen:
-                                                # logger.debug("lenght: {}".format(picLen))
+                                                logger.debug("lenght: {}".format(picLen))
                                                 # logger.debug("recv one {} start".format(recvBuff[jpegStartIndex4+5:jpegStartIndex4+5+3].hex()))
                                                 # logger.debug("recv one {} end".format(recvBuff[jpegStartIndex4+5:jpegStartIndex4+5+picLen+10].hex(' ')))
                                                 jpegBytes = recvBuff[jpegStartIndex4+5:jpegStartIndex4+5+picLen+1]
@@ -128,6 +130,7 @@ class tkGUI:
                                             break
                                         else:
                                             startFindIndex = jpegStartIndex1+1
+                                            logger.debug('index:{}'.format(startFindIndex))
                                     except ValueError as e:
                                         # logger.warning(e)
                                         break
@@ -145,7 +148,6 @@ class tkGUI:
                             logger.exception(e)
                             break
 
-                    logger.debug("程序关闭")
                     sock.close()
                 except Exception as e:
                     logger.warning(str(e))
