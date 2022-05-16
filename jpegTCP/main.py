@@ -1,5 +1,5 @@
-from cmath import log
-from inspect import isgetsetdescriptor
+import cv2
+import numpy as np
 import struct
 import time
 import tkinter as tk
@@ -86,7 +86,7 @@ class tkGUI:
 
     def waitConnection(self):
         # runs on a sepparate thread
-        HOST = "192.168.1.104"
+        HOST = "192.168.1.107"
         PORT = 6666
         ROTATE = 90
 
@@ -131,9 +131,22 @@ class tkGUI:
                                                 if not self.isStop:
                                                     # Convert bytes to stream (file-like object in memory)
                                                     picture_stream = io.BytesIO(jpegBytes)
+
+
                                                     # Create Image object
-                                                    pi = Image.open(picture_stream)
-                                                    self.currentPic = pi.rotate(ROTATE, expand=True)
+                                                    cvImg = cv2.imdecode(np.frombuffer(jpegBytes, np.uint8), cv2.IMREAD_COLOR)
+                                                    cvImg = cv2.rotate(cvImg, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                                                    # # 用人脸级联分类器引擎进行人脸识别，返回的faces为人脸坐标列表，1.3是放大比例，5是重复识别次数
+                                                    faces = face_cascade.detectMultiScale(cvImg, 1.1, 5, minSize=(100,100))
+                                                    if  len(faces) > 0:
+                                                        for (x,y,w,h) in faces:
+                                                            print(w, h)
+                                                            img = cv2.rectangle(cvImg,(x,y),(x+w,y+h),(255,0,0),2)
+                                                            self.currentPic = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                                                            break
+                                                    else:
+                                                        pi = Image.open(picture_stream)
+                                                        self.currentPic = pi.rotate(ROTATE, expand=True)
                                                     photo = ImageTk.PhotoImage(self.currentPic)
                                                     self.image.config(image=photo)
                                                     self.image.photo = photo
@@ -184,7 +197,7 @@ class tkGUI:
 
     def savePic(self):
         if self.currentPic:
-            filename = tkinter.filedialog.asksaveasfilename(title="Save As", filetypes=[("Pic Files", "*.jpg")], defaultextension=".jpg", initialdir=getCurrentPath(), initialfile=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))#返回文件名
+            filename = tkinter.filedialog.asksaveasfilename(title="Save As", filetypes=[("Pic Files", "*.jpg")], defaultextension=".jpg", initialdir=getCurrentPath(), initialfile=datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S"))#返回文件名
             if not filename:
                 return
             self.currentPic.save(filename)
@@ -195,6 +208,10 @@ class tkGUI:
         self.root.destroy()
 
 if __name__ == '__main__':
+    xml_face = "E:\Python\Python38\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml"
+    # 导入人脸级联分类器引擎，'.xml'文件里包含训练出来的人脸特征，cv2.data.haarcascades即为存放所有级联分类器模型文件的目录
+    face_cascade = cv2.CascadeClassifier(xml_face)
+
     root = tk.Tk()
     root.wm_title('JPEG TCP')
     app = tkGUI(root)
