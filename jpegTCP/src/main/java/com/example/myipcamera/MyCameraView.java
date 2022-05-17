@@ -27,7 +27,7 @@ public class MyCameraView  extends SurfaceView implements SurfaceHolder.Callback
         super(context);
         Log.d(TAG, "MyCameraView: ");
         mCamera = camera;
-        ust = new UdpSocketThread();
+        ust = new UdpSocketThread(context);
         tst = new TcpSocketThread(6666);
 
         // Install a SurfaceHolder.Callback so we get notified when the

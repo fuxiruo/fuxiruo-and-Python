@@ -86,7 +86,8 @@ class tkGUI:
 
     def waitConnection(self):
         # runs on a sepparate thread
-        HOST = "192.168.1.107"
+        # HOST = "192.168.1.107"
+        HOST = None
         PORT = 6666
         ROTATE = 90
 
@@ -94,6 +95,23 @@ class tkGUI:
         startFindIndex = 0
 
         while self.go:
+            try:
+                udps = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+                udps.bind(("", 5555))
+                udps.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1) # 设置广播模式
+                udps.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # 设置重复绑定
+                while HOST is None:
+                    logger.info("wait host broadcast ip")
+                    data,addr = udps.recvfrom(1024)
+                    logger.info("recv:{} from {}".format(data, addr))
+                    if ord('@') == data[0] and ord('$') == data[len(data)-1]:
+                        HOST = addr[0]
+                        logger.info("find host ip:" + HOST)
+                udps.close()
+            except Exception as e:
+                logger.exception(e)
+                break
+
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 try:
                     # Connect to server and send data
@@ -103,13 +121,13 @@ class tkGUI:
                     logger.debug("connect succ")
                     recvBuff = bytes()
                     startFindIndex = 0
-                    picLen = 0
+                    picLen = 8
                     while self.go:
                         try:
-                            data = sock.recv(300000)
+                            data = sock.recv(204800)
                             if data:
-                                # print('received {}'.format(data.hex(' ')))
-                                # logger.debug("parse start")
+                                # if 0==len(recvBuff):
+                                #     logger.info('received {} startFindIndex:{}'.format(data[0:10].hex(' '), startFindIndex))
                                 recvBuff += data
 
                                 while len(recvBuff) > picLen and startFindIndex < len(recvBuff):
@@ -151,9 +169,9 @@ class tkGUI:
                                                     self.image.config(image=photo)
                                                     self.image.photo = photo
 
-                                                recvBuff = recvBuff[jpegStartIndex4+5+picLen+1:]
+                                                recvBuff = recvBuff[jpegStartIndex4+5+picLen:]
                                                 startFindIndex = 0
-                                                picLen = 0
+                                                picLen = 8
                                                 logger.debug("end pic, curren recvBuff1: {}".format(len(recvBuff)))
                                                 self.updateFPS()
                                             elif jpegStartIndex1 > 0:
@@ -162,6 +180,7 @@ class tkGUI:
                                                 logger.warning("jpegStartIndex1:{}, curren recvBuff2: {}".format(jpegStartIndex1, len(recvBuff)))
                                             break
                                         else:
+                                            logger.warning(recvBuff[0:5].hex(' '))
                                             logger.warning('bad index:{}, try next index:{}'.format(startFindIndex, jpegStartIndex2))
                                             startFindIndex = jpegStartIndex2
                                     except ValueError as e:
@@ -170,7 +189,7 @@ class tkGUI:
                                     except Exception as e:
                                         recvBuff = bytes()
                                         startFindIndex = 0
-                                        picLen = 0
+                                        picLen = 8
                                         logger.warning(e)
 
                                     # logger.debug("parse end")
@@ -203,7 +222,7 @@ class tkGUI:
             self.currentPic.save(filename)
 
     def endTCP(self):
-        logger.debug("软件关闭")
+        logger.info("软件关闭")
         self.go = False
         self.root.destroy()
 

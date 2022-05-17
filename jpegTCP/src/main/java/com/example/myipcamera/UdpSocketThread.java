@@ -1,5 +1,8 @@
 package com.example.myipcamera;
 
+import android.content.Context;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.util.Log;
 
 import java.io.ByteArrayInputStream;
@@ -10,27 +13,42 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class UdpSocketThread  extends Thread{
     private DatagramSocket ds;
-    private int port = 10000;
+    private int port = 5555;
     private String TAG = "UdpSocketThread";
     private ConcurrentLinkedQueue<ByteArrayOutputStream> queueToSend;
     private InetAddress ip;
+    private String mWifiIp;
 
-    public UdpSocketThread(){
+    public UdpSocketThread(Context context){
         super();
         try {
             ds = new DatagramSocket();
             ip = InetAddress.getByName("255.255.255.255");
             queueToSend = new ConcurrentLinkedQueue<ByteArrayOutputStream>();
+
+            WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            mWifiIp = intIP2StringIP(wifiInfo.getIpAddress());//得到IPV4地址
+
+            Log.d(TAG, "ipAddress: " + mWifiIp);
         } catch (SocketException e) {
             Log.w(TAG, "UdpSocketThread: ", e);
         }catch(Exception e){
             Log.w(TAG, "UdpSocketThread: ", e);
         }
+    }
+
+    private String intIP2StringIP(int ip) {
+        return (ip & 0xFF) + "." +
+                ((ip >> 8) & 0xFF) + "." +
+                ((ip >> 16) & 0xFF) + "." +
+                (ip >> 24 & 0xFF);
     }
 
     @Override
@@ -42,45 +60,13 @@ public class UdpSocketThread  extends Thread{
                 break;
             }
             try {
-                Thread.sleep(10);
-                if(queueToSend.size() > 0){
-                    try {
-                        ByteArrayOutputStream bos = queueToSend.poll();
-                        Log.d(TAG, "send:" + bos.toByteArray().length);
-                        byte[] bytesToSend = bos.toByteArray();
-                        int j = 1000;
-                        int sendCount = 0;
-                        ByteArrayInputStream bi = new ByteArrayInputStream(bytesToSend);
-                        byte[] header = new byte[8];
-                        header[0] = (byte)(0xAA);
-                        header[1] = (byte)(0x55);
-                        header[2] = (byte)(0xAA);
-                        header[3] = (byte)(0x55);
-                        header[4] = (byte)((bytesToSend.length >> 24) & 0xFF);
-                        header[5] = (byte)((bytesToSend.length >> 16) & 0xFF);
-                        header[6] = (byte)((bytesToSend.length >> 8) & 0xFF);
-                        header[7] = (byte)(bytesToSend.length & 0xFF);
-                        DatagramPacket dp0 = new DatagramPacket(header, header.length, ip, 10000);
-                        ds.send(dp0);
-
-                        while(sendCount < bytesToSend.length){
-                            byte[] bs = new byte[j];
-                            if(j > bytesToSend.length-sendCount){
-                                j = bytesToSend.length-sendCount;
-                            }
-                            int readCount = bi.read(bs, 0, j);
-                            sendCount += readCount;
-//                            Log.d(TAG, "send: " + readCount + " total:" + sendCount + " all:" + bytesToSend.length + " readCount:"+readCount);
-                            DatagramPacket dp = new DatagramPacket(bs, readCount, ip, 10000);
-                            ds.send(dp);
-                        }
-                        Log.d(TAG, "run: send end packet");
-                    } catch (Exception e) {
-                        Log.e(TAG, "run1: ", e);
-                    }
-                }
+                Thread.sleep(1000);
+                String sTemp = "@" + mWifiIp + "$";
+                byte[] header = sTemp.getBytes(StandardCharsets.UTF_8);
+                DatagramPacket dp0 = new DatagramPacket(header, header.length, ip, port);
+                ds.send(dp0);
             } catch (Exception e){
-                Log.e(TAG, "run2: ", e);
+                Log.e(TAG, "UdpSocketThread runs: ", e);
             }
         }
     }
