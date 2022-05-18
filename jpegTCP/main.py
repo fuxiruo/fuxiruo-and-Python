@@ -17,6 +17,8 @@ from PIL import Image
 from PIL import ImageTk
 from enum import Enum, auto
 
+import TcpPortScan
+
 UDPport = 50050
 
 LOG_FORMAT = '[%(asctime)s][%(levelname)5s][%(module)s:%(funcName)s][%(threadName)10s]->%(message)s'
@@ -48,6 +50,21 @@ def getCurrentPath():
     else:
         current_path = os.path.dirname(__file__)
     return current_path
+
+ADB_PTAH = r"I:\android\android-studio\sdk\platform-tools\adb"
+def adbPortAutoConnect(host):
+    portlist = []
+    for p in range(35000, 40000):
+        portlist.append(p)
+
+    openports = []
+    TcpPortScan.portScanner_2(host,portlist,openports)             #执行扫描函数
+    # logger.info("IP:" + host)                        #输出扫描结果
+    logger.info("Open Ports:" + str(openports))
+
+    if len(openports) == 1:
+        res = os.popen("{} connect {}:{}".format(ADB_PTAH, host, openports[0])).read()
+        logger.info(res)
 
 class tkGUI:
     def __init__(self, root):
@@ -161,6 +178,8 @@ class tkGUI:
             except Exception as e:
                 logger.exception(e)
                 break
+
+            adbPortAutoConnect(HOST)
 
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 try:
