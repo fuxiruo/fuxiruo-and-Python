@@ -13,10 +13,17 @@ import os
 import sys
 from PIL import Image
 from PIL import ImageTk
+from enum import Enum, auto
 
 UDPport = 50050
 
 LOG_FORMAT = '[%(asctime)s][%(levelname)5s][%(module)s:%(funcName)s][%(threadName)10s]->%(message)s'
+
+class FaceDetectStatus(Enum):
+    NO_FACE = auto()
+    FACE_IN = auto()
+    FACE_OUT = auto()
+    FACE_RE_IN = auto()
 
 logger = logging.getLogger('main')
 logger.setLevel(logging.DEBUG)
@@ -75,6 +82,43 @@ class tkGUI:
         self.lastPicTime = None
         self.nowPicTime = None
         self.threadShowing = False
+
+        self.mLastFaceInTime = 0
+        self.mLastFaceOutTime = 0
+        self.mFaceDeteceStatus = FaceDetectStatus.NO_FACE
+
+    def faceDetectState(self, bHadFace):
+        lastStatus = self.mFaceDeteceStatus
+
+        if  FaceDetectStatus.NO_FACE == self.mFaceDeteceStatus:
+            if bHadFace:
+                logger.info("bHadFace:{}, mFaceDeteceStatus:{}".format(bHadFace, self.mFaceDeteceStatus.name))
+                self.mFaceDeteceStatus = FaceDetectStatus.FACE_IN
+                self.mLastFaceInTime = time.time()
+        elif FaceDetectStatus.FACE_IN == self.mFaceDeteceStatus:
+            if not bHadFace:
+                logger.info("bHadFace:{}, mFaceDeteceStatus:{}".format(bHadFace, self.mFaceDeteceStatus.name))
+                self.mLastFaceOutTime = time.time()
+                logger.info("{:.2f} - {:.2f} = {:.2f}".format(self.mLastFaceOutTime, self.mLastFaceInTime, self.mLastFaceOutTime - self.mLastFaceInTime))
+                if self.mLastFaceOutTime - self.mLastFaceInTime > 0.5:
+                    self.mFaceDeteceStatus = FaceDetectStatus.FACE_OUT
+                elif self.mLastFaceOutTime - self.mLastFaceInTime > 0.3:
+                    self.mFaceDeteceStatus = FaceDetectStatus.NO_FACE
+        elif FaceDetectStatus.FACE_OUT == self.mFaceDeteceStatus:
+            if bHadFace:
+                logger.info("bHadFace:{}, mFaceDeteceStatus:{}".format(bHadFace, self.mFaceDeteceStatus.name))
+                self.mLastFaceInTime = time.time()
+                logger.info("{:.2f} - {:.2f} = {:.2f}".format(self.mLastFaceOutTime, self.mLastFaceInTime, self.mLastFaceOutTime - self.mLastFaceInTime))
+                if time.time() - self.mLastFaceOutTime > 0.5:
+                    self.mFaceDeteceStatus = FaceDetectStatus.FACE_RE_IN
+                elif time.time() - self.mLastFaceOutTime > 0.3:
+                    self.mFaceDeteceStatus = FaceDetectStatus.FACE_IN
+
+        if lastStatus != self.mFaceDeteceStatus:
+            logger.info("{}->{}".format(lastStatus, self.mFaceDeteceStatus))
+        if FaceDetectStatus.FACE_RE_IN == self.mFaceDeteceStatus:
+            logger.info("mFaceDeteceStatus:{} !!!!!!!!!!!!!!!!!!!!!!!!!!".format(self.mFaceDeteceStatus.name))
+            self.mFaceDeteceStatus = FaceDetectStatus.NO_FACE
 
     def updateFPS(self):
         self.nowPicTime = time.time()
@@ -157,12 +201,13 @@ class tkGUI:
                                                     # # 用人脸级联分类器引擎进行人脸识别，返回的faces为人脸坐标列表，1.3是放大比例，5是重复识别次数
                                                     faces = face_cascade.detectMultiScale(cvImg, 1.1, 5, minSize=(100,100))
                                                     if  len(faces) > 0:
+                                                        self.faceDetectState(True)
                                                         for (x,y,w,h) in faces:
-                                                            print(w, h)
                                                             img = cv2.rectangle(cvImg,(x,y),(x+w,y+h),(255,0,0),2)
                                                             self.currentPic = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
                                                             break
                                                     else:
+                                                        self.faceDetectState(False)
                                                         pi = Image.open(picture_stream)
                                                         self.currentPic = pi.rotate(ROTATE, expand=True)
                                                     photo = ImageTk.PhotoImage(self.currentPic)
