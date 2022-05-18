@@ -128,7 +128,7 @@ class tkGUI:
                 logger.info("bHadFace:{}, mFaceDeteceStatus:{}".format(bHadFace, self.mFaceDeteceStatus.name))
                 self.mLastFaceInTime = time.time()
                 logger.info("{:.2f} - {:.2f} = {:.2f}".format(self.mLastFaceOutTime, self.mLastFaceInTime, self.mLastFaceOutTime - self.mLastFaceInTime))
-                if time.time() - self.mLastFaceOutTime > 0.5:
+                if time.time() - self.mLastFaceOutTime > 0.5 and time.time() - self.mLastFaceOutTime < 5:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_RE_IN
                 elif time.time() - self.mLastFaceOutTime > 0.3:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_IN
