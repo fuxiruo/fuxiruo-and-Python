@@ -1,3 +1,4 @@
+import imp
 import cv2
 import numpy as np
 import struct
@@ -11,6 +12,7 @@ import io
 import datetime
 import os
 import sys
+import subprocess
 from PIL import Image
 from PIL import ImageTk
 from enum import Enum, auto
@@ -116,9 +118,13 @@ class tkGUI:
 
         if lastStatus != self.mFaceDeteceStatus:
             logger.info("{}->{}".format(lastStatus, self.mFaceDeteceStatus))
+
         if FaceDetectStatus.FACE_RE_IN == self.mFaceDeteceStatus:
             logger.info("mFaceDeteceStatus:{} !!!!!!!!!!!!!!!!!!!!!!!!!!".format(self.mFaceDeteceStatus.name))
             self.mFaceDeteceStatus = FaceDetectStatus.NO_FACE
+            return True
+        else:
+            return False
 
     def updateFPS(self):
         self.nowPicTime = time.time()
@@ -201,7 +207,9 @@ class tkGUI:
                                                     # # 用人脸级联分类器引擎进行人脸识别，返回的faces为人脸坐标列表，1.3是放大比例，5是重复识别次数
                                                     faces = face_cascade.detectMultiScale(cvImg, 1.1, 5, minSize=(100,100))
                                                     if  len(faces) > 0:
-                                                        self.faceDetectState(True)
+                                                        if self.faceDetectState(True):
+                                                            sock.send(b'face rein')
+                                                            subprocess.Popen("adb shell input swipe 500 800 500 400")
                                                         for (x,y,w,h) in faces:
                                                             img = cv2.rectangle(cvImg,(x,y),(x+w,y+h),(255,0,0),2)
                                                             self.currentPic = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
