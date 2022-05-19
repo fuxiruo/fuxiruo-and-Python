@@ -1,4 +1,3 @@
-import imp
 import cv2
 import numpy as np
 import struct
@@ -52,9 +51,19 @@ def getCurrentPath():
     return current_path
 
 ADB_PTAH = r"I:\android\android-studio\sdk\platform-tools\adb"
+
+def adbSwipe():
+    res = subprocess.Popen("{} shell input swipe 500 800 500 400".format(ADB_PTAH))
+    return True
+
 def adbPortAutoConnect(host):
+    res = os.popen("{} devices".format(ADB_PTAH)).read()
+    if res.find(host) > 0:
+        logger.info("adb already connected succ")
+        return
+
     portlist = []
-    for p in range(35000, 40000):
+    for p in range(38000, 45000):
         portlist.append(p)
 
     openports = []
@@ -62,9 +71,12 @@ def adbPortAutoConnect(host):
     # logger.info("IP:" + host)                        #输出扫描结果
     logger.info("Open Ports:" + str(openports))
 
-    if len(openports) == 1:
-        res = os.popen("{} connect {}:{}".format(ADB_PTAH, host, openports[0])).read()
+    for port in openports:
+        res = os.popen("{} connect {}:{}".format(ADB_PTAH, host, port)).read()
         logger.info(res)
+        if res.find("connected") > 0:
+            logger.info("adb connected succ")
+            break
 
 class tkGUI:
     def __init__(self, root):
@@ -127,8 +139,8 @@ class tkGUI:
             if bHadFace:
                 logger.info("bHadFace:{}, mFaceDeteceStatus:{}".format(bHadFace, self.mFaceDeteceStatus.name))
                 self.mLastFaceInTime = time.time()
-                logger.info("{:.2f} - {:.2f} = {:.2f}".format(self.mLastFaceOutTime, self.mLastFaceInTime, self.mLastFaceOutTime - self.mLastFaceInTime))
-                if time.time() - self.mLastFaceOutTime > 0.5 and time.time() - self.mLastFaceOutTime < 5:
+                logger.info("{:.2f} - {:.2f} = {:.2f}".format(self.mLastFaceOutTime, self.mLastFaceInTime, time.time() - self.mLastFaceOutTime))
+                if time.time() - self.mLastFaceOutTime > 0.5 and time.time() - self.mLastFaceOutTime < 3:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_RE_IN
                 elif time.time() - self.mLastFaceOutTime > 0.3:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_IN
@@ -175,11 +187,11 @@ class tkGUI:
                         HOST = addr[0]
                         logger.info("find host ip:" + HOST)
                 udps.close()
+
+                adbPortAutoConnect(HOST)
             except Exception as e:
                 logger.exception(e)
                 break
-
-            adbPortAutoConnect(HOST)
 
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 try:
@@ -228,7 +240,8 @@ class tkGUI:
                                                     if  len(faces) > 0:
                                                         if self.faceDetectState(True):
                                                             sock.send(b'face rein')
-                                                            subprocess.Popen("adb shell input swipe 500 800 500 400")
+                                                            if not adbSwipe():
+                                                                adbPortAutoConnect(HOST)
                                                         for (x,y,w,h) in faces:
                                                             img = cv2.rectangle(cvImg,(x,y),(x+w,y+h),(255,0,0),2)
                                                             self.currentPic = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
