@@ -15,6 +15,7 @@ Python
 | 9 | autoSetupIss | Inno Setup脚本[Files]字段辅助生成器 |
 | 10 | xmlhelper | tkinter+xml+re+excel综合例子 |
 | 11 | tinyxmlparse | 简易xml解析器 |
+| 12 | jpegTCP | Android通过TCP传输jpeg视频流，opencv识别人脸，用人脸的消失和重现作为判断条件，通过adb模拟屏幕滑动，实现抖音自动划屏 |
 
 ### 效果图
 ![snake](snap/snake.gif "贪吃蛇")
