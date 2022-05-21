@@ -85,24 +85,22 @@ class tkGUI:
         self.isStop = False
         self.save = tk.Button(root, text='Save pi', command=self.savePic, width=15)
         self.console = tk.Label(root, anchor='nw', font=(
-            'Courier 10 Pitch', '11'), fg="white", bg="black", width=60, height=19)
+            'Courier 10 Pitch', '11'), fg="white", bg="black", width=30, height=19)
         self.showData = tk.Label(root, anchor='w', font=(
-            'Courier 10 Pitch', '11'), fg="orange", bg="black", width=30, height=7, justify='left')
-        self.showMatrix = tk.Label(root, anchor='nw', font=(
             'Courier 10 Pitch', '11'), fg="orange", bg="black", width=30, height=7, justify='left')
         self.photo = tk.PhotoImage()
         self.image = tk.Label(root, image=self.photo, borderwidth=3)
         self.image.photo = self.photo
         self.currentPic = None
 
-        self.qu.grid(row=0, column=1)
-        self.stop.grid(row=0, column=3)
-        self.save.grid(row=0, column=4)
-        self.image.grid(rowspan=2, row=1, columnspan=3, padx=7, pady=5)
-        self.console.grid(columnspan=2, rowspan=1, row=1,
-                          column=3, pady=2, padx=(0, 7))
-        self.showData.grid(row=2, column=3, pady=2)
-        self.showMatrix.grid(row=2, column=4, pady=2, padx=(2, 7))
+        self.stop.grid(row=0, column=0)
+        self.save.grid(row=0, column=1)
+        self.qu.grid(row=0, column=2)
+        self.image.grid(rowspan=2, row=1, columnspan=2, padx=7, pady=5)
+        self.console.grid(row=1, column=2, pady=2, padx=(0, 7), sticky=tk.N+tk.S+tk.W+tk.E)
+        self.showData.grid(row=2, column=2, pady=2, sticky=tk.W+tk.E)
+        root.grid_rowconfigure(1,weight=1)
+        root.grid_columnconfigure(2,weight=1)
 
         self.root = root
         self.go = True
@@ -131,18 +129,18 @@ class tkGUI:
                 logger.info("bHadFace:{}, mFaceDeteceStatus:{}".format(bHadFace, self.mFaceDeteceStatus.name))
                 self.mLastFaceOutTime = time.time()
                 logger.info("{:.2f} - {:.2f} = {:.2f}".format(self.mLastFaceOutTime, self.mLastFaceInTime, self.mLastFaceOutTime - self.mLastFaceInTime))
-                if self.mLastFaceOutTime - self.mLastFaceInTime > 0.5:
+                if self.mLastFaceOutTime - self.mLastFaceInTime > 0.7:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_OUT
-                elif self.mLastFaceOutTime - self.mLastFaceInTime > 0.3:
+                elif self.mLastFaceOutTime - self.mLastFaceInTime > 0.5:
                     self.mFaceDeteceStatus = FaceDetectStatus.NO_FACE
         elif FaceDetectStatus.FACE_OUT == self.mFaceDeteceStatus:
             if bHadFace:
                 logger.info("bHadFace:{}, mFaceDeteceStatus:{}".format(bHadFace, self.mFaceDeteceStatus.name))
                 self.mLastFaceInTime = time.time()
                 logger.info("{:.2f} - {:.2f} = {:.2f}".format(self.mLastFaceOutTime, self.mLastFaceInTime, time.time() - self.mLastFaceOutTime))
-                if time.time() - self.mLastFaceOutTime > 0.5 and time.time() - self.mLastFaceOutTime < 3:
+                if time.time() - self.mLastFaceOutTime > 0.7 and time.time() - self.mLastFaceOutTime < 3:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_RE_IN
-                elif time.time() - self.mLastFaceOutTime > 0.3:
+                elif time.time() - self.mLastFaceOutTime > 0.5:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_IN
 
         if lastStatus != self.mFaceDeteceStatus:
@@ -159,8 +157,9 @@ class tkGUI:
         self.nowPicTime = time.time()
         if self.lastPicTime:
             diff = self.nowPicTime - self.lastPicTime
-            fps = 1.0/diff
-            self.showData["text"] = "FPS:{:.2f}".format(fps)
+            if diff > 0:
+                fps = 1.0/diff
+                self.showData["text"] = "FPS:{:.2f}".format(fps)
         self.lastPicTime = self.nowPicTime
 
     def waitConnection(self):
@@ -231,21 +230,19 @@ class tkGUI:
                                                     # Convert bytes to stream (file-like object in memory)
                                                     picture_stream = io.BytesIO(jpegBytes)
 
-
                                                     # Create Image object
                                                     cvImg = cv2.imdecode(np.frombuffer(jpegBytes, np.uint8), cv2.IMREAD_COLOR)
                                                     cvImg = cv2.rotate(cvImg, cv2.ROTATE_90_COUNTERCLOCKWISE)
-                                                    # # 用人脸级联分类器引擎进行人脸识别，返回的faces为人脸坐标列表，1.3是放大比例，5是重复识别次数
-                                                    faces = face_cascade.detectMultiScale(cvImg, 1.1, 5, minSize=(100,100))
+                                                    # # 用人脸级联分类器引擎进行人脸识别，返回的faces为人脸坐标列表，1.3是放大比例，3是重复识别次数
+                                                    faces = face_cascade.detectMultiScale(cvImg, 1.1, 3, minSize=(90,90))
                                                     if  len(faces) > 0:
                                                         if self.faceDetectState(True):
                                                             sock.send(b'face rein')
                                                             if not adbSwipe():
                                                                 adbPortAutoConnect(HOST)
                                                         for (x,y,w,h) in faces:
-                                                            img = cv2.rectangle(cvImg,(x,y),(x+w,y+h),(255,0,0),2)
-                                                            self.currentPic = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-                                                            break
+                                                            cv2.rectangle(cvImg,(x,y),(x+w,y+h),(255,0,0),2)
+                                                        self.currentPic = Image.fromarray(cv2.cvtColor(cvImg, cv2.COLOR_BGR2RGB))
                                                     else:
                                                         self.faceDetectState(False)
                                                         pi = Image.open(picture_stream)
@@ -312,7 +309,7 @@ class tkGUI:
         self.root.destroy()
 
 if __name__ == '__main__':
-    xml_face = "E:\Python\Python38\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml"
+    xml_face = r"E:\Python\Python38\Lib\site-packages\cv2\data\haarcascade_frontalface_default.xml"
     # 导入人脸级联分类器引擎，'.xml'文件里包含训练出来的人脸特征，cv2.data.haarcascades即为存放所有级联分类器模型文件的目录
     face_cascade = cv2.CascadeClassifier(xml_face)
 
