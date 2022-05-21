@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -69,6 +70,16 @@ class ClientThread implements Runnable {
             Log.w(TAG, e);
         }
     }
+
+    private void Swipe(){
+        Process ps = null;
+        try {
+            ps = Runtime.getRuntime().exec("input swipe 500 800 500 400\n");
+            Log.d(TAG,"process " + ps.toString());
+        } catch (IOException e) {
+            Log.e(TAG, "Swipe: ", e);
+        }
+    }
 /*
 * 在Socket对象被关闭后，我们可以通过isClosed方法来判断某个Socket对象是否处于关闭状态。
 * 然而使用isClosed方法所返回的只是Socket对象的当前状态，也就是说，不管Socket对象是否曾经连接成功过，只要处于关闭状态，isClosde就返回true。
@@ -98,6 +109,7 @@ class ClientThread implements Runnable {
     //                    Log.d(TAG, "try data read");
                     if(ins.read(bytes) != -1) {
                         Log.d(TAG,mClientSocket.getRemoteSocketAddress().toString() + "客户端的信息：" + BytesToString(bytes));    //将接收的信息输出
+                        //Swipe();
                     }else{
                         Log.d(TAG, mClientSocket.getRemoteSocketAddress().toString() + " close");
                         break;
@@ -108,7 +120,7 @@ class ClientThread implements Runnable {
 
                 if(queueToSend.size() > 0){
                     ByteArrayOutputStream bos = queueToSend.poll();
-                    Log.d(TAG, "send:" + bos.toByteArray().length);
+//                    Log.d(TAG, "send:" + bos.toByteArray().length);
                     byte[] bytesToSend = bos.toByteArray();
                     byte[] header = new byte[8];
                     header[0] = (byte)(0xAA);
@@ -123,7 +135,7 @@ class ClientThread implements Runnable {
                     outputStream.flush();
                     outputStream.write(bytesToSend, 0, bytesToSend.length);
                     outputStream.flush();
-                    Log.d(TAG, "run: send end packet");
+//                    Log.d(TAG, "run: send end packet");
                 }
             }
         } catch (Exception e){

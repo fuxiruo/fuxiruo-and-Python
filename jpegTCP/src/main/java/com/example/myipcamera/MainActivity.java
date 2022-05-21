@@ -2,12 +2,17 @@ package com.example.myipcamera;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.hardware.Camera;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
-public class MainActivity extends AppCompatActivity {
+import java.io.DataOutputStream;
+import java.io.IOException;
+
+public class MainActivity extends Activity {
     private Camera mCamera;
     public MyCameraView mPreview;
 
@@ -48,5 +53,11 @@ public class MainActivity extends AppCompatActivity {
         finish();
         mCamera.release();
         mCamera=null;
+    }
+
+    // 使得点击屏幕的任何地方不会退出该活动
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        return false;
     }
 }
