@@ -27,6 +27,7 @@ class FaceDetectStatus(Enum):
     FACE_IN = auto()
     FACE_OUT = auto()
     FACE_RE_IN = auto()
+    FACE_RE_IN_OK = auto()
 
 logger = logging.getLogger('main')
 logger.setLevel(logging.DEBUG)
@@ -112,6 +113,8 @@ class tkGUI:
         self.nowPicTime = None
         self.threadShowing = False
 
+        self.mFaceInTimeCount = 0
+        self.mFaceOutTimeCount = 0
         self.mLastFaceInTime = 0
         self.mLastFaceOutTime = 0
         self.mFaceDeteceStatus = FaceDetectStatus.NO_FACE
@@ -123,30 +126,67 @@ class tkGUI:
             if bHadFace:
                 logger.info("bHadFace:{}, mFaceDeteceStatus:{}".format(bHadFace, self.mFaceDeteceStatus.name))
                 self.mFaceDeteceStatus = FaceDetectStatus.FACE_IN
+                self.mFaceInTimeCount = 0
+                self.mFaceOutTimeCount = 0
                 self.mLastFaceInTime = time.time()
+                self.mLastFaceOutTime = self.mLastFaceInTime
         elif FaceDetectStatus.FACE_IN == self.mFaceDeteceStatus:
             if not bHadFace:
-                logger.info("bHadFace:{}, mFaceDeteceStatus:{}".format(bHadFace, self.mFaceDeteceStatus.name))
+                self.mFaceOutTimeCount = self.mFaceOutTimeCount + time.time() - self.mLastFaceOutTime
                 self.mLastFaceOutTime = time.time()
-                logger.info("{:.2f} - {:.2f} = {:.2f}".format(self.mLastFaceOutTime, self.mLastFaceInTime, self.mLastFaceOutTime - self.mLastFaceInTime))
-                if self.mLastFaceOutTime - self.mLastFaceInTime > 0.7:
+                # logger.info("mFaceOutTimeCount:{}".format(self.mFaceOutTimeCount))
+                if self.mFaceOutTimeCount > 0.7:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_OUT
-                elif self.mLastFaceOutTime - self.mLastFaceInTime > 0.5:
-                    self.mFaceDeteceStatus = FaceDetectStatus.NO_FACE
+                elif self.mFaceOutTimeCount > 0.5:
+                    logger.info("bHadFace:{}, mFaceDeteceStatus:{}, FaceInTime reset".format(bHadFace, self.mFaceDeteceStatus.name))
+                    self.mFaceInTimeCount = 0
+            else:
+                self.mFaceInTimeCount = self.mFaceInTimeCount + time.time() - self.mLastFaceInTime
+                self.mLastFaceInTime = time.time()
+                # logger.info("mFaceInTimeCount:{}".format(self.mFaceInTimeCount))
+                if self.mFaceInTimeCount > 0.7:
+                    logger.info("bHadFace:{}, mFaceDeteceStatus:{}, FaceOutTime reset".format(bHadFace, self.mFaceDeteceStatus.name))
+                    self.mLastFaceOutTime = self.mLastFaceInTime
+                    self.mFaceInTimeCount = 0
+                    self.mFaceOutTimeCount = 0
         elif FaceDetectStatus.FACE_OUT == self.mFaceDeteceStatus:
             if bHadFace:
-                logger.info("bHadFace:{}, mFaceDeteceStatus:{}".format(bHadFace, self.mFaceDeteceStatus.name))
+                self.mFaceInTimeCount = self.mFaceInTimeCount + time.time() - self.mLastFaceInTime
                 self.mLastFaceInTime = time.time()
-                logger.info("{:.2f} - {:.2f} = {:.2f}".format(self.mLastFaceOutTime, self.mLastFaceInTime, time.time() - self.mLastFaceOutTime))
-                if time.time() - self.mLastFaceOutTime > 0.7 and time.time() - self.mLastFaceOutTime < 3:
+                # logger.info("mFaceInTimeCount:{}".format(self.mFaceInTimeCount))
+                if self.mFaceInTimeCount> 0.7 and self.mFaceInTimeCount <= 3:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_RE_IN
-                elif time.time() - self.mLastFaceOutTime > 0.5:
+                elif self.mFaceInTimeCount > 3:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_IN
+            else:
+                self.mFaceOutTimeCount = self.mFaceOutTimeCount + time.time() - self.mLastFaceOutTime
+                self.mLastFaceOutTime = time.time()
+                if self.mFaceOutTimeCount > 0.5:
+                    logger.info("bHadFace:{}, mFaceDeteceStatus:{}, FaceInTime reset".format(bHadFace, self.mFaceDeteceStatus.name))
+                    self.mFaceInTimeCount = 0
+                    self.mFaceOutTimeCount = 0
+        elif FaceDetectStatus.FACE_RE_IN == self.mFaceDeteceStatus:
+            if bHadFace:
+                self.mFaceInTimeCount = self.mFaceInTimeCount + time.time() - self.mLastFaceInTime
+                self.mLastFaceInTime = time.time()
+                # logger.info("mFaceInTimeCount:{}".format(self.mFaceInTimeCount))
+                if self.mFaceInTimeCount > 0.5:
+                    self.mFaceDeteceStatus = FaceDetectStatus.FACE_RE_IN_OK
+            else:
+                self.mFaceOutTimeCount = self.mFaceOutTimeCount + time.time() - self.mLastFaceOutTime
+                self.mLastFaceOutTime = time.time()
+                if self.mFaceOutTimeCount > 0.5:
+                    logger.info("face re in too short")
+                    self.mFaceDeteceStatus = FaceDetectStatus.FACE_OUT
 
         if lastStatus != self.mFaceDeteceStatus:
+            self.mFaceInTimeCount = 0
+            self.mFaceOutTimeCount = 0
+            self.mLastFaceInTime = time.time()
+            self.mLastFaceOutTime = self.mLastFaceInTime
             logger.info("{}->{}".format(lastStatus, self.mFaceDeteceStatus))
 
-        if FaceDetectStatus.FACE_RE_IN == self.mFaceDeteceStatus:
+        if FaceDetectStatus.FACE_RE_IN_OK == self.mFaceDeteceStatus:
             logger.info("mFaceDeteceStatus:{} !!!!!!!!!!!!!!!!!!!!!!!!!!".format(self.mFaceDeteceStatus.name))
             self.mFaceDeteceStatus = FaceDetectStatus.NO_FACE
             return True
@@ -235,10 +275,10 @@ class tkGUI:
                                                     cvImg = cv2.rotate(cvImg, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
                                                     # # 用人脸级联分类器引擎进行人脸识别，返回的faces为人脸坐标列表，1.3是放大比例，3是重复识别次数
-                                                    faces = face_cascade.detectMultiScale(cvImg, 1.1, 3, minSize=(90,90))
+                                                    faces = face_cascade.detectMultiScale(cvImg, 1.05, 3, minSize=(100,100))
                                                     if  len(faces) > 0:
                                                         if self.faceDetectState(True):
-                                                            sock.send(b'face rein')
+                                                            print(faces)
                                                             if not adbSwipe():
                                                                 adbPortAutoConnect(HOST)
                                                         for (x,y,w,h) in faces:
