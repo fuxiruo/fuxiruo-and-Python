@@ -228,11 +228,12 @@ class tkGUI:
 
                                                 if not self.isStop:
                                                     # Convert bytes to stream (file-like object in memory)
-                                                    picture_stream = io.BytesIO(jpegBytes)
+                                                    # picture_stream = io.BytesIO(jpegBytes)
 
                                                     # Create Image object
                                                     cvImg = cv2.imdecode(np.frombuffer(jpegBytes, np.uint8), cv2.IMREAD_COLOR)
                                                     cvImg = cv2.rotate(cvImg, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
                                                     # # 用人脸级联分类器引擎进行人脸识别，返回的faces为人脸坐标列表，1.3是放大比例，3是重复识别次数
                                                     faces = face_cascade.detectMultiScale(cvImg, 1.1, 3, minSize=(90,90))
                                                     if  len(faces) > 0:
@@ -242,11 +243,9 @@ class tkGUI:
                                                                 adbPortAutoConnect(HOST)
                                                         for (x,y,w,h) in faces:
                                                             cv2.rectangle(cvImg,(x,y),(x+w,y+h),(255,0,0),2)
-                                                        self.currentPic = Image.fromarray(cv2.cvtColor(cvImg, cv2.COLOR_BGR2RGB))
                                                     else:
                                                         self.faceDetectState(False)
-                                                        pi = Image.open(picture_stream)
-                                                        self.currentPic = pi.rotate(ROTATE, expand=True)
+                                                    self.currentPic = Image.fromarray(cv2.cvtColor(cvImg, cv2.COLOR_BGR2RGB))
                                                     photo = ImageTk.PhotoImage(self.currentPic)
                                                     self.image.config(image=photo)
                                                     self.image.photo = photo
