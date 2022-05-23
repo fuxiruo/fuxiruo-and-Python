@@ -264,7 +264,7 @@ class tkGUI:
 
                                             if len(recvBuff) >= jpegStartIndex4+5+picLen:
                                                 logger.debug("find pic, pic lenght: {}, curren recvBuff: {}".format(picLen, len(recvBuff)))
-                                                jpegBytes = recvBuff[jpegStartIndex4+5:jpegStartIndex4+5+picLen+1]
+                                                jpegBytes = recvBuff[jpegStartIndex4+5:jpegStartIndex4+5+picLen]
 
                                                 if not self.isStop:
                                                     # Convert bytes to stream (file-like object in memory)
