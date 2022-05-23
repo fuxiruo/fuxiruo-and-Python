@@ -64,7 +64,7 @@ def adbPortAutoConnect(host):
         return
 
     portlist = []
-    for p in range(38000, 45000):
+    for p in range(37000, 45000):
         portlist.append(p)
 
     openports = []
@@ -154,7 +154,7 @@ class tkGUI:
                 self.mFaceInTimeCount = self.mFaceInTimeCount + time.time() - self.mLastFaceInTime
                 self.mLastFaceInTime = time.time()
                 # logger.info("mFaceInTimeCount:{}".format(self.mFaceInTimeCount))
-                if self.mFaceInTimeCount> 0.7 and self.mFaceInTimeCount <= 3:
+                if self.mFaceInTimeCount > 0.9 and self.mFaceInTimeCount <= 3:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_RE_IN
                 elif self.mFaceInTimeCount > 3:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_IN
@@ -170,7 +170,7 @@ class tkGUI:
                 self.mFaceInTimeCount = self.mFaceInTimeCount + time.time() - self.mLastFaceInTime
                 self.mLastFaceInTime = time.time()
                 # logger.info("mFaceInTimeCount:{}".format(self.mFaceInTimeCount))
-                if self.mFaceInTimeCount > 0.5:
+                if self.mFaceInTimeCount > 0.9:
                     self.mFaceDeteceStatus = FaceDetectStatus.FACE_RE_IN_OK
             else:
                 self.mFaceOutTimeCount = self.mFaceOutTimeCount + time.time() - self.mLastFaceOutTime
@@ -275,7 +275,7 @@ class tkGUI:
                                                     cvImg = cv2.rotate(cvImg, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
                                                     # # 用人脸级联分类器引擎进行人脸识别，返回的faces为人脸坐标列表，1.3是放大比例，3是重复识别次数
-                                                    faces = face_cascade.detectMultiScale(cvImg, 1.05, 3, minSize=(100,100))
+                                                    faces = face_cascade.detectMultiScale(cvImg, 1.02, 3, minSize=(100,100))
                                                     if  len(faces) > 0:
                                                         if self.faceDetectState(True):
                                                             print(faces)
